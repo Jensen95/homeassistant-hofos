@@ -1,0 +1,31 @@
+# Ignore dependencies
+node_modules/
+package-lock.json
+
+# Ignore build output
+dist/
+
+# Ignore environment files
+.env
+.env.local
+
+# Ignore git
+.git/
+.gitignore
+
+# Ignore IDE files
+.vscode/
+.idea/
+
+# Ignore test files
+**/*.test.ts
+vitest.config.ts
+
+# Ignore documentation
+*.md
+!README.md
+
+# Ignore development files
+tsconfig.json
+.eslintrc.json
+.prettierrc.json
