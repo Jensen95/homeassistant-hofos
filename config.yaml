@@ -1,7 +1,7 @@
 name: HOFOR Scraper
 version: '1.0.0'
 slug: hofor_scraper
-description: Scrapes HOFOR consumption data and publishes to MQTT
+description: Scrapes HOFOR consumption data and publishes to MQTT or InfluxDB
 url: https://github.com/yourusername/homeassistant-hofos
 arch:
   - amd64
@@ -16,14 +16,26 @@ options:
   mqtt_broker: 'mqtt://core-mosquitto:1883'
   mqtt_username: ''
   mqtt_password: ''
+  influxdb_url: ''
+  influxdb_token: ''
+  influxdb_org: ''
+  influxdb_bucket: 'hofor'
   scrape_interval_hours: 3
+  enable_backfill: true
+  backfill_days: 365
   log_level: 'warn'
 schema:
   hofor_kundenummer: str
   hofor_bs_kundenummer: password
-  mqtt_broker: str
+  mqtt_broker: str?
   mqtt_username: str?
   mqtt_password: password?
+  influxdb_url: str?
+  influxdb_token: password?
+  influxdb_org: str?
+  influxdb_bucket: str?
   scrape_interval_hours: int(1,24)
+  enable_backfill: bool?
+  backfill_days: int(1,730)?
   log_level: list(debug|info|warn|error)
 image: ghcr.io/yourusername/hofor-scraper-{arch}

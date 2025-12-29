@@ -2,7 +2,9 @@ import winston from 'winston';
 import dotenv from 'dotenv';
 import { HoforScraper } from './scraper.js';
 import { MqttClient } from './mqtt.js';
+import { InfluxDBClient } from './influxdb.js';
 import { AddonConfig } from './types.js';
+import { fetchHoforData } from './playwright.js';
 
 // Load environment variables
 dotenv.config();
@@ -16,21 +18,41 @@ function loadConfig(): AddonConfig {
       username: process.env.HOFOR_KUNDENUMMER || '',
       password: process.env.HOFOR_BS_KUNDENUMMER || '',
     },
-    mqtt: {
-      broker: process.env.MQTT_BROKER || 'mqtt://localhost:1883',
+    scrapeIntervalHours: parseInt(process.env.SCRAPE_INTERVAL_HOURS || '3', 10),
+    headless: process.env.HEADLESS !== 'false',
+    logLevel: (process.env.LOG_LEVEL as 'debug' | 'info' | 'warn' | 'error') || 'info',
+    enableBackfill: process.env.ENABLE_BACKFILL === 'true',
+    backfillDays: parseInt(process.env.BACKFILL_DAYS || '365', 10),
+  };
+
+  // Configure MQTT if provided
+  if (process.env.MQTT_BROKER) {
+    config.mqtt = {
+      broker: process.env.MQTT_BROKER,
       username: process.env.MQTT_USERNAME,
       password: process.env.MQTT_PASSWORD,
       clientId: process.env.MQTT_CLIENT_ID || 'hofor-scraper',
       baseTopic: process.env.MQTT_BASE_TOPIC || 'hofor',
-    },
-    scrapeIntervalHours: parseInt(process.env.SCRAPE_INTERVAL_HOURS || '3', 10),
-    headless: process.env.HEADLESS !== 'false',
-    logLevel: (process.env.LOG_LEVEL as 'debug' | 'info' | 'warn' | 'error') || 'info',
-  };
+    };
+  }
+
+  // Configure InfluxDB if provided
+  if (process.env.INFLUXDB_URL && process.env.INFLUXDB_TOKEN) {
+    config.influxdb = {
+      url: process.env.INFLUXDB_URL,
+      token: process.env.INFLUXDB_TOKEN,
+      org: process.env.INFLUXDB_ORG || '',
+      bucket: process.env.INFLUXDB_BUCKET || 'hofor',
+    };
+  }
 
   // Validate required configuration
   if (!config.hofor.username || !config.hofor.password) {
-    throw new Error('HOFOR credentials not configured. Set HOFOR_USERNAME and HOFOR_PASSWORD');
+    throw new Error('HOFOR credentials not configured. Set HOFOR_KUNDENUMMER and HOFOR_BS_KUNDENUMMER');
+  }
+
+  if (!config.mqtt && !config.influxdb) {
+    throw new Error('Either MQTT or InfluxDB must be configured');
   }
 
   return config;
@@ -68,7 +90,8 @@ function createLogger(level: string): winston.Logger {
  */
 class HoforScraperApp {
   private scraper: HoforScraper;
-  private mqttClient: MqttClient;
+  private mqttClient?: MqttClient;
+  private influxdbClient?: InfluxDBClient;
   private logger: winston.Logger;
   private config: AddonConfig;
   private intervalId: NodeJS.Timeout | null = null;
@@ -81,9 +104,18 @@ class HoforScraperApp {
     // Create logger
     this.logger = createLogger(this.config.logLevel);
 
-    // Create scraper and MQTT client
+    // Create scraper
     this.scraper = new HoforScraper(this.config.hofor, this.logger, this.config.headless);
-    this.mqttClient = new MqttClient(this.config.mqtt, this.logger);
+
+    // Create MQTT client if configured
+    if (this.config.mqtt) {
+      this.mqttClient = new MqttClient(this.config.mqtt, this.logger);
+    }
+
+    // Create InfluxDB client if configured
+    if (this.config.influxdb) {
+      this.influxdbClient = new InfluxDBClient(this.config.influxdb, this.logger);
+    }
 
     // Setup signal handlers for graceful shutdown
     this.setupSignalHandlers();
@@ -114,6 +146,46 @@ class HoforScraperApp {
   }
 
   /**
+   * Perform backfilling of historical data
+   */
+  private async backfillHistoricalData(): Promise<void> {
+    if (!this.config.enableBackfill) {
+      this.logger.info('Backfilling is disabled');
+      return;
+    }
+
+    if (!this.influxdbClient) {
+      this.logger.warn('Backfilling requires InfluxDB to be configured');
+      return;
+    }
+
+    this.logger.info(`Starting backfill for last ${this.config.backfillDays} days...`);
+
+    try {
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - this.config.backfillDays);
+      const endDate = new Date();
+
+      const historicalData = await fetchHoforData({
+        startDate,
+        endDate,
+        kundenummer: this.config.hofor.username,
+        bsKundenummer: this.config.hofor.password,
+        headless: this.config.headless,
+      });
+
+      if (historicalData.length > 0) {
+        await this.influxdbClient.writeHistoricalData(historicalData);
+        this.logger.info(`Backfill completed: ${historicalData.length} data points`);
+      } else {
+        this.logger.warn('No historical data found to backfill');
+      }
+    } catch (error) {
+      this.logger.error('Failed to backfill historical data', { error });
+    }
+  }
+
+  /**
    * Perform a single scrape and publish cycle
    */
   private async scrapeAndPublish(): Promise<void> {
@@ -132,14 +204,21 @@ class HoforScraperApp {
         return;
       }
 
-      // Publish to MQTT
-      if (!this.mqttClient.isConnected()) {
-        this.logger.warn('MQTT client not connected, attempting to reconnect...');
-        await this.mqttClient.connect();
-        await this.mqttClient.setupAutoDiscovery();
+      // Publish to MQTT if configured
+      if (this.mqttClient) {
+        if (!this.mqttClient.isConnected()) {
+          this.logger.warn('MQTT client not connected, attempting to reconnect...');
+          await this.mqttClient.connect();
+          await this.mqttClient.setupAutoDiscovery();
+        }
+        await this.mqttClient.publishAll(result.consumption, result.price);
       }
 
-      await this.mqttClient.publishAll(result.consumption, result.price);
+      // Write to InfluxDB if configured
+      if (this.influxdbClient) {
+        await this.influxdbClient.writeAll(result.consumption, result.price);
+      }
+
       this.logger.info('Scrape cycle completed successfully');
     } catch (error) {
       this.logger.error('Error during scrape cycle', { error });
@@ -152,13 +231,19 @@ class HoforScraperApp {
   async start(): Promise<void> {
     this.logger.info('Starting HOFOR Scraper Addon...');
     this.logger.info(`Configuration: scrape interval = ${this.config.scrapeIntervalHours} hours`);
+    this.logger.info(`Data storage: MQTT=${!!this.config.mqtt}, InfluxDB=${!!this.config.influxdb}`);
 
     try {
-      // Connect to MQTT broker
-      await this.mqttClient.connect();
+      // Connect to MQTT broker if configured
+      if (this.mqttClient) {
+        await this.mqttClient.connect();
+        await this.mqttClient.setupAutoDiscovery();
+      }
 
-      // Setup Home Assistant auto-discovery
-      await this.mqttClient.setupAutoDiscovery();
+      // Perform backfilling if enabled
+      if (this.config.enableBackfill && this.influxdbClient) {
+        await this.backfillHistoricalData();
+      }
 
       // Perform initial scrape
       await this.scrapeAndPublish();
@@ -204,10 +289,21 @@ class HoforScraperApp {
     }
 
     // Disconnect from MQTT
-    try {
-      await this.mqttClient.disconnect();
-    } catch (error) {
-      this.logger.error('Error disconnecting from MQTT', { error });
+    if (this.mqttClient) {
+      try {
+        await this.mqttClient.disconnect();
+      } catch (error) {
+        this.logger.error('Error disconnecting from MQTT', { error });
+      }
+    }
+
+    // Close InfluxDB client
+    if (this.influxdbClient) {
+      try {
+        await this.influxdbClient.close();
+      } catch (error) {
+        this.logger.error('Error closing InfluxDB client', { error });
+      }
     }
 
     this.logger.info('Shutdown complete');

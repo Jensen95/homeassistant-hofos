@@ -17,6 +17,18 @@ export interface ConsumptionData {
 }
 
 /**
+ * Historical consumption data point
+ */
+export interface HistoricalDataPoint {
+  /** Date of the measurement */
+  date: string;
+  /** Usage value */
+  usage: string;
+  /** Metric type */
+  metric: string;
+}
+
+/**
  * Price data per cubic meter
  */
 export interface PriceData {
@@ -45,6 +57,20 @@ export interface MqttConfig {
 }
 
 /**
+ * InfluxDB configuration
+ */
+export interface InfluxDBConfig {
+  /** InfluxDB URL */
+  url: string;
+  /** InfluxDB authentication token */
+  token: string;
+  /** InfluxDB organization */
+  org: string;
+  /** InfluxDB bucket */
+  bucket: string;
+}
+
+/**
  * HOFOR credentials
  */
 export interface HoforCredentials {
@@ -60,14 +86,20 @@ export interface HoforCredentials {
 export interface AddonConfig {
   /** HOFOR credentials */
   hofor: HoforCredentials;
-  /** MQTT configuration */
-  mqtt: MqttConfig;
+  /** MQTT configuration (optional) */
+  mqtt?: MqttConfig;
+  /** InfluxDB configuration (optional) */
+  influxdb?: InfluxDBConfig;
   /** Scraping interval in hours */
   scrapeIntervalHours: number;
   /** Run browser in headless mode */
   headless: boolean;
   /** Log level */
   logLevel: 'debug' | 'info' | 'warn' | 'error';
+  /** Enable backfilling of historical data */
+  enableBackfill: boolean;
+  /** Number of days to backfill */
+  backfillDays: number;
 }
 
 /**
