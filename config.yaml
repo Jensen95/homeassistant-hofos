@@ -1,0 +1,29 @@
+name: HOFOR Scraper
+version: '1.0.0'
+slug: hofor_scraper
+description: Scrapes HOFOR consumption data and publishes to MQTT
+url: https://github.com/yourusername/homeassistant-hofos
+arch:
+  - amd64
+startup: application
+boot: auto
+init: false
+map:
+  - share:rw
+options:
+  hofor_kundenummer: ''
+  hofor_bs_kundenummer: ''
+  mqtt_broker: 'mqtt://core-mosquitto:1883'
+  mqtt_username: ''
+  mqtt_password: ''
+  scrape_interval_hours: 3
+  log_level: 'warn'
+schema:
+  hofor_kundenummer: str
+  hofor_bs_kundenummer: password
+  mqtt_broker: str
+  mqtt_username: str?
+  mqtt_password: password?
+  scrape_interval_hours: int(1,24)
+  log_level: list(debug|info|warn|error)
+image: ghcr.io/yourusername/hofor-scraper-{arch}
