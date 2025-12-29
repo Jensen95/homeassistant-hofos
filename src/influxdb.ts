@@ -59,23 +59,54 @@ export class InfluxDBClient {
   }
 
   /**
+   * Parse numeric value from Danish locale format (comma as decimal separator)
+   * @param value String value to parse (e.g., "10,5")
+   * @returns Parsed float value or NaN if invalid
+   */
+  private parseDecimalValue(value: string): number {
+    // Replace comma with dot for decimal parsing (Danish format)
+    return parseFloat(value.replace(',', '.'));
+  }
+
+  /**
+   * Parse date in DD.MM.YYYY format
+   * @param dateStr Date string to parse
+   * @returns Parsed Date object or null if invalid
+   */
+  private parseDate(dateStr: string): Date | null {
+    const parts = dateStr.split('.');
+    if (parts.length !== 3) {
+      return null;
+    }
+
+    const [day, month, year] = parts.map(p => parseInt(p, 10));
+    if (isNaN(day) || isNaN(month) || isNaN(year)) {
+      return null;
+    }
+
+    const date = new Date(`${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`);
+    if (isNaN(date.getTime())) {
+      return null;
+    }
+
+    return date;
+  }
+
+  /**
    * Write historical consumption data to InfluxDB
    */
   async writeHistoricalData(dataPoints: HistoricalDataPoint[]): Promise<void> {
     try {
       let written = 0;
       for (const dataPoint of dataPoints) {
-        const usage = parseFloat(dataPoint.usage.replace(',', '.'));
+        const usage = this.parseDecimalValue(dataPoint.usage);
         if (isNaN(usage)) {
           this.logger.warn(`Skipping invalid usage value: ${dataPoint.usage}`);
           continue;
         }
 
-        // Parse date in DD.MM.YYYY format
-        const [day, month, year] = dataPoint.date.split('.');
-        const timestamp = new Date(`${year}-${month}-${day}`);
-        
-        if (isNaN(timestamp.getTime())) {
+        const timestamp = this.parseDate(dataPoint.date);
+        if (!timestamp) {
           this.logger.warn(`Skipping invalid date: ${dataPoint.date}`);
           continue;
         }

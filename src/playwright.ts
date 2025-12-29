@@ -6,6 +6,10 @@ const HOFOR_LOGIN_URL =
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 5000;
 
+// CSV parsing constants
+const CSV_HEADER_VALUE = 'Forbrug';
+const CSV_INVALID_VALUE = '#N/A';
+
 interface HoforCsvResponse {
   status: 'success' | 'error';
   data: string;
@@ -130,7 +134,7 @@ async function fetchHoforDataInternal(options: FetchOptions): Promise<Historical
     const data = csvData.split('\n').reduce(
       (acc, line) => {
         const [date, usage, metric] = line.split(';');
-        if (usage === 'Forbrug' || usage === '#N/A' || !date || !usage) {
+        if (usage === CSV_HEADER_VALUE || usage === CSV_INVALID_VALUE || !date || !usage) {
           return acc;
         }
         acc.push({ date, usage, metric });

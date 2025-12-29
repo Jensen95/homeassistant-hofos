@@ -37,11 +37,11 @@ function loadConfig(): AddonConfig {
   }
 
   // Configure InfluxDB if provided
-  if (process.env.INFLUXDB_URL && process.env.INFLUXDB_TOKEN) {
+  if (process.env.INFLUXDB_URL && process.env.INFLUXDB_TOKEN && process.env.INFLUXDB_ORG) {
     config.influxdb = {
       url: process.env.INFLUXDB_URL,
       token: process.env.INFLUXDB_TOKEN,
-      org: process.env.INFLUXDB_ORG || '',
+      org: process.env.INFLUXDB_ORG,
       bucket: process.env.INFLUXDB_BUCKET || 'hofor',
     };
   }
