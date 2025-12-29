@@ -18,9 +18,6 @@ export class InfluxDBClient {
     this.writeApi.useDefaultTags({ source: 'hofor-scraper' });
   }
 
-  /**
-   * Write consumption data to InfluxDB
-   */
   async writeConsumption(data: ConsumptionData): Promise<void> {
     try {
       const point = new Point(MEASUREMENT_CONSUMPTION)
@@ -38,9 +35,6 @@ export class InfluxDBClient {
     }
   }
 
-  /**
-   * Write price data to InfluxDB
-   */
   async writePrice(data: PriceData): Promise<void> {
     try {
       const point = new Point(MEASUREMENT_PRICE)
@@ -58,21 +52,10 @@ export class InfluxDBClient {
     }
   }
 
-  /**
-   * Parse numeric value from Danish locale format (comma as decimal separator)
-   * @param value String value to parse (e.g., "10,5")
-   * @returns Parsed float value or NaN if invalid
-   */
   private parseDecimalValue(value: string): number {
-    // Replace comma with dot for decimal parsing (Danish format)
     return parseFloat(value.replace(',', '.'));
   }
 
-  /**
-   * Parse date in DD.MM.YYYY format
-   * @param dateStr Date string to parse
-   * @returns Parsed Date object or null if invalid
-   */
   private parseDate(dateStr: string): Date | null {
     const parts = dateStr.split('.');
     if (parts.length !== 3) {
@@ -92,9 +75,6 @@ export class InfluxDBClient {
     return date;
   }
 
-  /**
-   * Write historical consumption data to InfluxDB
-   */
   async writeHistoricalData(dataPoints: HistoricalDataPoint[]): Promise<void> {
     try {
       let written = 0;
@@ -129,9 +109,6 @@ export class InfluxDBClient {
     }
   }
 
-  /**
-   * Write both consumption and price data
-   */
   async writeAll(consumption: ConsumptionData | null, price: PriceData | null): Promise<void> {
     const errors: string[] = [];
 
@@ -164,9 +141,6 @@ export class InfluxDBClient {
     }
   }
 
-  /**
-   * Close the InfluxDB client and flush any pending writes
-   */
   async close(): Promise<void> {
     try {
       await this.writeApi.close();
