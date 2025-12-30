@@ -10,8 +10,8 @@ dotenv.config();
 function loadConfig(): AddonConfig {
   const config: AddonConfig = {
     hofor: {
-      username: process.env.HOFOR_KUNDENUMMER || '',
-      password: process.env.HOFOR_BS_KUNDENUMMER || '',
+      kundenummer: process.env.HOFOR_KUNDENUMMER || '',
+      bsKundenummer: process.env.HOFOR_BS_KUNDENUMMER || '',
     },
     influxdb: {
       url: process.env.INFLUXDB_URL || 'http://a0d7b954-influxdb:8086',
@@ -26,8 +26,10 @@ function loadConfig(): AddonConfig {
     backfillDays: parseInt(process.env.BACKFILL_DAYS || '365', 10),
   };
 
-  if (!config.hofor.username || !config.hofor.password) {
-    throw new Error('HOFOR credentials not configured. Set HOFOR_KUNDENUMMER and HOFOR_BS_KUNDENUMMER');
+  if (!config.hofor.kundenummer || !config.hofor.bsKundenummer) {
+    throw new Error(
+      'HOFOR credentials not configured. Set HOFOR_KUNDENUMMER and HOFOR_BS_KUNDENUMMER'
+    );
   }
 
   if (!config.influxdb.token) {
@@ -114,8 +116,8 @@ class HoforScraperApp {
       const historicalData = await fetchHoforData({
         startDate,
         endDate,
-        kundenummer: this.config.hofor.username,
-        bsKundenummer: this.config.hofor.password,
+        kundenummer: this.config.hofor.kundenummer,
+        bsKundenummer: this.config.hofor.bsKundenummer,
         headless: this.config.headless,
       });
 

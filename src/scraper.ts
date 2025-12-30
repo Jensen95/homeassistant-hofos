@@ -69,8 +69,8 @@ export class HoforScraper {
 
     // Fill in credentials
     this.logger.debug('Entering credentials...');
-    await this.page.fill('input[name="UserName"]', this.credentials.username);
-    await this.page.fill('input[name="Password"]', this.credentials.password);
+    await this.page.fill('input[name="UserName"]', this.credentials.kundenummer);
+    await this.page.fill('input[name="Password"]', this.credentials.bsKundenummer);
 
     // Click login button
     this.logger.debug('Clicking login button...');

@@ -25,8 +25,8 @@ export interface InfluxDBConfig {
 }
 
 export interface HoforCredentials {
-  username: string;
-  password: string;
+  kundenummer: string;
+  bsKundenummer: string;
 }
 
 export interface AddonConfig {

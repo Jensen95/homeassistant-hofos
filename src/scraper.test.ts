@@ -37,14 +37,18 @@ describe('HoforScraper', () => {
 
   describe('constructor', () => {
     it('should create scraper instance with credentials', () => {
-      const scraper = new HoforScraper({ username: 'test', password: 'pass' }, mockLogger);
+      const scraper = new HoforScraper({ kundenummer: 'test', bsKundenummer: 'pass' }, mockLogger);
       expect(scraper).toBeDefined();
     });
   });
 
   describe('scrape', () => {
     it('should successfully scrape consumption and price data', async () => {
-      const scraper = new HoforScraper({ username: 'test', password: 'pass' }, mockLogger, true);
+      const scraper = new HoforScraper(
+        { kundenummer: 'test', bsKundenummer: 'pass' },
+        mockLogger,
+        true
+      );
 
       const result = await scraper.scrape();
 
@@ -53,7 +57,11 @@ describe('HoforScraper', () => {
     });
 
     it('should retry on failure', async () => {
-      const scraper = new HoforScraper({ username: 'test', password: 'pass' }, mockLogger, true);
+      const scraper = new HoforScraper(
+        { kundenummer: 'test', bsKundenummer: 'pass' },
+        mockLogger,
+        true
+      );
 
       // Mock failure scenario would require more detailed mocking
       // This is a placeholder test
@@ -64,7 +72,7 @@ describe('HoforScraper', () => {
 
   describe('close', () => {
     it('should close browser successfully', async () => {
-      const scraper = new HoforScraper({ username: 'test', password: 'pass' }, mockLogger);
+      const scraper = new HoforScraper({ kundenummer: 'test', bsKundenummer: 'pass' }, mockLogger);
 
       await scraper.close();
       expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('Browser closed'));
