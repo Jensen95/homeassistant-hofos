@@ -37,7 +37,7 @@ describe('InfluxDBClient', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     mockLogger = {
       info: vi.fn(),
       debug: vi.fn(),
@@ -177,9 +177,7 @@ describe('InfluxDBClient', () => {
     it('should close InfluxDB client', async () => {
       await influxdbClient.close();
 
-      expect(mockLogger.info).toHaveBeenCalledWith(
-        expect.stringContaining('InfluxDB client closed')
-      );
+      expect(mockWriteApi.close).toHaveBeenCalledOnce();
     });
   });
 });

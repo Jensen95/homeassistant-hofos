@@ -62,12 +62,14 @@ export class InfluxDBClient {
       return null;
     }
 
-    const [day, month, year] = parts.map(p => parseInt(p, 10));
+    const [day, month, year] = parts.map((p) => parseInt(p, 10));
     if (isNaN(day) || isNaN(month) || isNaN(year)) {
       return null;
     }
 
-    const date = new Date(`${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`);
+    const date = new Date(
+      `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`
+    );
     if (isNaN(date.getTime())) {
       return null;
     }
