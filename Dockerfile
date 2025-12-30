@@ -22,10 +22,10 @@ ARG VERSION=dev
 ARG COMMIT_SHA=unknown
 
 LABEL org.opencontainers.image.version="${VERSION}" \
-      org.opencontainers.image.revision="${COMMIT_SHA}" \
-      org.opencontainers.image.title="HOFOR Scraper" \
-      org.opencontainers.image.description="Home Assistant addon for scraping HOFOR water consumption data" \
-      org.opencontainers.image.source="https://github.com/Jensen95/homeassistant-hofos"
+    org.opencontainers.image.revision="${COMMIT_SHA}" \
+    org.opencontainers.image.title="HOFOR Scraper" \
+    org.opencontainers.image.description="Home Assistant addon for scraping HOFOR water consumption data" \
+    org.opencontainers.image.source="https://github.com/Jensen95/homeassistant-hofos"
 
 RUN apk add --no-cache \
     chromium \

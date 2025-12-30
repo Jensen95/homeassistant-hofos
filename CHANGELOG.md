@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - Initial release of HOFOR Scraper addon
 - Automated water consumption data scraping from HOFOR
 - InfluxDB integration for time-series data storage
@@ -24,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - 2025-12-30
 
 ### Added
+
 - Initial beta release
 - Core scraping functionality
 - InfluxDB storage backend

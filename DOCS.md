@@ -17,29 +17,35 @@
 ### Required Settings
 
 **HOFOR Credentials:**
+
 - `hofor_kundenummer`: Your 7-digit HOFOR customer number
 - `hofor_bs_kundenummer`: Your 8-digit HOFOR BS customer number
 
 **InfluxDB Connection:**
+
 - `influxdb_token`: Authentication token for your InfluxDB instance
   - Get this from the InfluxDB add-on UI under **Data** → **Tokens**
 
 ### Optional Settings
 
 **InfluxDB Configuration:**
+
 - `influxdb_url`: InfluxDB server URL (default: `http://a0d7b954-influxdb:8086`)
 - `influxdb_org`: Organization name (default: `homeassistant`)
 - `influxdb_bucket`: Bucket name (default: `homeassistant/autogen`)
 
 **Water Price Tracking:**
+
 - `water_price_per_m3`: Price per cubic meter (set to 0 to disable)
 - `water_price_currency`: Currency code (default: `DKK`)
 
 **Backfilling:**
+
 - `enable_backfill`: Load historical data on first run (default: `true`)
 - `backfill_days`: Number of days to backfill (1-730, default: 365)
 
 **Scraping:**
+
 - `scrape_interval_hours`: Hours between scrapes (1-24, default: 3)
 - `log_level`: Logging verbosity (debug/info/warn/error, default: info)
 
@@ -77,6 +83,7 @@ log_level: "info"
 ### Step 2: Find Your HOFOR Credentials
 
 Your HOFOR credentials can be found:
+
 - **Kundenummer**: On your HOFOR bills or at https://prod.tastselvservice.dk
 - **BS-Kundenummer**: Also on your bills, typically labeled as "BS-kunde nummer"
 
@@ -89,6 +96,7 @@ Paste your credentials and InfluxDB token into the add-on configuration page.
 1. Start the add-on
 2. Check the logs for successful connection and scraping
 3. Open InfluxDB Data Explorer and query:
+
    ```flux
    from(bucket: "homeassistant/autogen")
      |> range(start: -7d)
@@ -121,6 +129,7 @@ The add-on writes two measurements to InfluxDB:
 ### Long-Term Statistics
 
 The InfluxDB data can be visualized using:
+
 1. **Grafana Add-on** - Full-featured dashboarding
 2. **ApexCharts Card** - Custom HA dashboard cards
 3. **InfluxDB Sensor** - Create template sensors
@@ -179,7 +188,6 @@ sensor:
 ## Support
 
 - **Issues**: https://github.com/Jensen95/homeassistant-hofos/issues
-- **Discussions**: https://github.com/Jensen95/homeassistant-hofos/discussions
 
 ## License
 
