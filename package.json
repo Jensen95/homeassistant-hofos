@@ -1,6 +1,6 @@
 {
   "name": "hofor-scraper-addon",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Home Assistant addon for scraping HOFOR consumption data and pricing",
   "main": "dist/main.js",
   "type": "module",
@@ -12,7 +12,9 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
     "lint": "eslint src/**/*.ts",
-    "format": "prettier --write \"src/**/*.ts\""
+    "format": "prettier --write \"src/**/*.ts\"",
+    "commit": "cz",
+    "sync-version": "node scripts/sync-version.ts"
   },
   "keywords": [
     "home-assistant",
@@ -35,7 +37,10 @@
     "@typescript-eslint/parser": "^8.50.0",
     "@vitest/coverage-v8": "^4.0.16",
     "@vitest/ui": "^4.0.16",
+    "commitizen": "^4.3.1",
+    "cz-conventional-changelog": "^3.3.0",
     "eslint": "^9.39.2",
+    "globals": "^16.5.0",
     "prettier": "^3.7.4",
     "typescript": "^5.9.3",
     "vitest": "^4.0.16"
@@ -45,5 +50,10 @@
   },
   "wallaby": {
     "reportConsoleErrorAsError": true
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
   }
 }
