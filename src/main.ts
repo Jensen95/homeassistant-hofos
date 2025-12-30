@@ -1,6 +1,5 @@
 import winston from 'winston';
 import dotenv from 'dotenv';
-import { HoforScraper } from './scraper.js';
 import { InfluxDBClient } from './influxdb.js';
 import { AddonConfig } from './types.js';
 import { fetchHoforData } from './playwright.js';
