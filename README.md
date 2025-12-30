@@ -15,7 +15,7 @@ A standalone Home Assistant addon that scrapes HOFOR (Hovedstadens Forsyningssel
 
 ## Architecture
 
-```
+```sh
 ┌─────────────────────┐
 │ TypeScript Addon    │
 │ (Playwright)        │
@@ -59,10 +59,10 @@ cd /addons
 git clone https://github.com/yourusername/homeassistant-hofos.git hofor-scraper
 ```
 
-2. Refresh the Home Assistant Supervisor addon list
-3. Install the "HOFOR Scraper" addon
-4. Configure the addon (see Configuration section)
-5. Start the addon
+1. Refresh the Home Assistant Supervisor addon list
+2. Install the "HOFOR Scraper" addon
+3. Configure the addon (see Configuration section)
+4. Start the addon
 
 ## Configuration
 
@@ -106,25 +106,25 @@ For local development without Docker:
 cp .env.example .env
 ```
 
-2. Install dependencies:
+1. Install dependencies:
 
 ```bash
 npm install
 ```
 
-3. Install Playwright browsers:
+1. Install Playwright browsers:
 
 ```bash
 npx playwright install chromium
 ```
 
-4. Build the project:
+1. Build the project:
 
 ```bash
 npm run build
 ```
 
-5. Run in development mode:
+1. Run in development mode:
 
 ```bash
 npm run dev
@@ -154,6 +154,7 @@ The addon stores water consumption data in InfluxDB:
 ### Backfilling
 
 When `enable_backfill: true` is set, the addon will:
+
 1. Fetch historical data for the specified number of days (default: 365)
 2. Insert all historical consumption data into InfluxDB
 3. Tag backfilled data with `backfilled: true`
@@ -184,7 +185,7 @@ from(bucket: "homeassistant/autogen")
 
 ### Project Structure
 
-```
+```sh
 hofor-addon/
 ├── package.json          # Node.js dependencies and scripts
 ├── tsconfig.json         # TypeScript configuration
@@ -206,17 +207,20 @@ hofor-addon/
 ### Colocated Types
 
 Types are colocated with their respective modules:
+
 - **influxdb.types.ts**: InfluxDB-specific types (ConsumptionData, PriceData, HistoricalDataPoint, InfluxDBConfig)
 - **types.ts**: Global application types (AddonConfig, HoforCredentials, ScraperResult, ScraperError)
 
 ### Testing Approach
 
 The project uses **Test-Driven Development (TDD)** principles:
+
 - Tests validate actual data parsing and transformations, not just log output
 - Mock InfluxDB Point objects capture and verify field values, tags, and timestamps
 - Tests cover edge cases: invalid dates, Danish decimal format, null handling
 
 Example test structure:
+
 ```typescript
 it('should parse Danish decimal format with comma', async () => {
   const historicalData = [{ date: '15.03.2024', usage: '25,75', metric: 'm³' }];
@@ -320,7 +324,7 @@ If Playwright fails to launch:
 - [x] Add historical data backfilling
 - [x] Colocate types with their respective modules
 - [x] Use TDD approach for tests (validate data parsing, not logs)
-- [ ] Update DOM selectors based on actual HOFOR page structure
+- [x] Update DOM selectors based on actual HOFOR page structure
 - [ ] Add support for multi-architecture Docker builds (arm64, armv7)
 - [ ] Create GitHub Actions CI/CD pipeline
 - [ ] Add more comprehensive error notifications
