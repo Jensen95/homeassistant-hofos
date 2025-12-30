@@ -77,6 +77,8 @@ influxdb_url: "http://a0d7b954-influxdb:8086"  # Home Assistant InfluxDB addon d
 influxdb_token: "your_influxdb_token"
 influxdb_org: "homeassistant"
 influxdb_bucket: "homeassistant/autogen"
+water_price_per_m3: 0  # Optional: set water price per m³ (0 to disable)
+water_price_currency: "DKK"  # Optional: price currency
 enable_backfill: true
 backfill_days: 365
 scrape_interval_hours: 3
@@ -91,6 +93,8 @@ log_level: "info"
 | `influxdb_token` | Yes | - | InfluxDB authentication token |
 | `influxdb_org` | No | `homeassistant` | InfluxDB organization name |
 | `influxdb_bucket` | No | `homeassistant/autogen` | InfluxDB bucket name |
+| `water_price_per_m3` | No | `0` | Water price per cubic meter (0 to disable price tracking) |
+| `water_price_currency` | No | `DKK` | Currency for water price |
 | `enable_backfill` | No | `true` | Enable historical data backfilling |
 | `backfill_days` | No | `365` | Number of days to backfill (1-730) |
 | `scrape_interval_hours` | No | `3` | Hours between scraping attempts (1-24) |
@@ -132,7 +136,16 @@ npm run dev
 
 ## InfluxDB Integration
 
-The addon stores water consumption data in InfluxDB:
+The addon stores water consumption and price data in InfluxDB using the `@influxdata/influxdb-client` library (v1.35.0).
+
+### Version Support
+
+**Supported InfluxDB Versions:**
+- ✅ **InfluxDB 2.x** (Fully supported)
+- ✅ **InfluxDB 3.x** (Fully supported via v2 compatibility API)
+- ❌ **InfluxDB 1.x** (Not supported - uses v2/v3 client library)
+
+The addon uses the InfluxDB v2/v3 client library which provides native support for InfluxDB 2.x and compatibility with InfluxDB 3.x through its v2 API compatibility layer. If you need InfluxDB 1.x support, you'll need to use a separate adapter or migrate to InfluxDB 2.x/3.x.
 
 ### Water Consumption Measurement
 
@@ -144,6 +157,18 @@ The addon stores water consumption data in InfluxDB:
   - `source`: hofor-scraper
   - `backfilled`: true/false (indicates if data was backfilled)
 - **Timestamp**: Date of the consumption reading (DD.MM.YYYY format from HOFOR)
+
+### Water Price Measurement
+
+- **Measurement**: `water_price`
+- **Fields**:
+  - `price_per_m3` (float): Price per cubic meter
+- **Tags**:
+  - `currency`: DKK (or configured currency)
+  - `source`: hofor-scraper
+- **Timestamp**: When the price data was recorded
+
+**Note**: Price tracking is optional and controlled by the `water_price_per_m3` configuration. Set to `0` to disable price tracking.
 
 ### Data Format
 

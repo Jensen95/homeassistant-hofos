@@ -5,9 +5,15 @@ export interface HoforCredentials {
   bsKundenummer: string;
 }
 
+export interface WaterPriceConfig {
+  pricePerM3: number;
+  currency: string;
+}
+
 export interface AddonConfig {
   hofor: HoforCredentials;
   influxdb: InfluxDBConfig;
+  waterPrice: WaterPriceConfig;
   scrapeIntervalHours: number;
   headless: boolean;
   logLevel: 'debug' | 'info' | 'warn' | 'error';

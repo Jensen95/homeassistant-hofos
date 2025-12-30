@@ -2,7 +2,7 @@ import winston from 'winston';
 import dotenv from 'dotenv';
 import { InfluxDBClient } from './influxdb.js';
 import type { AddonConfig } from './types.js';
-import { fetchHoforData } from './playwright.js';
+import { fetchHoforData } from './fetchHoforData.js';
 
 dotenv.config();
 
@@ -17,6 +17,10 @@ function loadConfig(): AddonConfig {
       token: process.env.INFLUXDB_TOKEN || '',
       org: process.env.INFLUXDB_ORG || 'homeassistant',
       bucket: process.env.INFLUXDB_BUCKET || 'homeassistant/autogen',
+    },
+    waterPrice: {
+      pricePerM3: parseFloat(process.env.WATER_PRICE_PER_M3 || '0'),
+      currency: process.env.WATER_PRICE_CURRENCY || 'DKK',
     },
     scrapeIntervalHours: parseInt(process.env.SCRAPE_INTERVAL_HOURS || '3', 10),
     headless: process.env.HEADLESS !== 'false',
@@ -160,7 +164,13 @@ class HoforScraperApp {
             readingDate,
           };
 
-          await this.influxdbClient.writeAll(consumption, null);
+          const price = this.config.waterPrice.pricePerM3 > 0 ? {
+            pricePerM3: this.config.waterPrice.pricePerM3,
+            currency: this.config.waterPrice.currency,
+            timestamp: new Date(),
+          } : null;
+
+          await this.influxdbClient.writeAll(consumption, price);
           this.logger.info('Scrape cycle completed successfully');
         } else {
           this.logger.warn('Latest data point has invalid usage value');

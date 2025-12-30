@@ -17,6 +17,8 @@ options:
   influxdb_token: ''
   influxdb_org: 'homeassistant'
   influxdb_bucket: 'homeassistant/autogen'
+  water_price_per_m3: 0
+  water_price_currency: 'DKK'
   scrape_interval_hours: 3
   enable_backfill: true
   backfill_days: 365
@@ -28,6 +30,8 @@ schema:
   influxdb_token: password
   influxdb_org: str
   influxdb_bucket: str
+  water_price_per_m3: float?
+  water_price_currency: str?
   scrape_interval_hours: int(1,24)
   enable_backfill: bool?
   backfill_days: int(1,730)?
