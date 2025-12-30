@@ -1,5 +1,5 @@
 import { chromium } from 'playwright';
-import { HistoricalDataPoint } from './influxdb.types.js';
+import type { HistoricalDataPoint } from './influxdb.types.js';
 
 const HOFOR_LOGIN_URL =
   'https://prod.tastselvservice.dk/Account/LogOn?ReturnUrl=/Consumption/RedirectToHOFORForbrug';
@@ -48,7 +48,9 @@ async function fetchWithRetry(options: FetchOptions): Promise<HistoricalDataPoin
     }
   }
 
-  throw new Error(`Failed to fetch HOFOR data after ${MAX_RETRIES} attempts: ${lastError?.message}`);
+  throw new Error(
+    `Failed to fetch HOFOR data after ${MAX_RETRIES} attempts: ${lastError?.message}`
+  );
 }
 
 async function fetchHoforDataInternal(options: FetchOptions): Promise<HistoricalDataPoint[]> {
@@ -111,17 +113,14 @@ async function fetchHoforDataInternal(options: FetchOptions): Promise<Historical
 
     const csvData = ((await csvResponse.json()) as HoforCsvResponse).data;
 
-    const data = csvData.split('\n').reduce(
-      (acc, line) => {
-        const [date, usage, metric] = line.split(';');
-        if (usage === CSV_HEADER_VALUE || usage === CSV_INVALID_VALUE || !date || !usage) {
-          return acc;
-        }
-        acc.push({ date, usage, metric });
+    const data = csvData.split('\n').reduce((acc, line) => {
+      const [date, usage, metric] = line.split(';');
+      if (usage === CSV_HEADER_VALUE || usage === CSV_INVALID_VALUE || !date || !usage) {
         return acc;
-      },
-      [] as HistoricalDataPoint[]
-    );
+      }
+      acc.push({ date, usage, metric });
+      return acc;
+    }, [] as HistoricalDataPoint[]);
 
     return data;
   } finally {

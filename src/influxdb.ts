@@ -1,6 +1,6 @@
 import { InfluxDB, Point, WriteApi } from '@influxdata/influxdb-client';
 import { Logger } from 'winston';
-import {
+import type {
   InfluxDBConfig,
   ConsumptionData,
   PriceData,

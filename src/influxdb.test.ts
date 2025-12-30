@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { InfluxDBClient } from './influxdb.js';
 import { Logger } from 'winston';
-import { ConsumptionData, PriceData, HistoricalDataPoint } from './influxdb.types.js';
+import type { ConsumptionData, PriceData, HistoricalDataPoint } from './influxdb.types.js';
 import { Point } from '@influxdata/influxdb-client';
 
 const mockWriteApi = {
@@ -164,7 +164,7 @@ describe('InfluxDBClient', () => {
       await influxdbClient.writeHistoricalData(historicalData);
 
       expect(mockPoints.length).toBe(2);
-      
+
       const point1 = mockPoints[0] as any;
       expect(point1.getMeasurement()).toBe('water_consumption');
       expect(point1.getField('value')).toBe(10.5);
@@ -175,7 +175,7 @@ describe('InfluxDBClient', () => {
       const point2 = mockPoints[1] as any;
       expect(point2.getField('value')).toBe(12.3);
       expect(point2.getTimestamp()).toEqual(new Date('2024-01-02T00:00:00Z'));
-      
+
       expect(mockWriteApi.flush).toHaveBeenCalled();
     });
 

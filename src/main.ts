@@ -1,7 +1,7 @@
 import winston from 'winston';
 import dotenv from 'dotenv';
 import { InfluxDBClient } from './influxdb.js';
-import { AddonConfig } from './types.js';
+import type { AddonConfig } from './types.js';
 import { fetchHoforData } from './playwright.js';
 
 dotenv.config();
@@ -148,18 +148,18 @@ class HoforScraperApp {
       if (historicalData.length > 0) {
         const latestPoint = historicalData[historicalData.length - 1];
         const usage = parseFloat(latestPoint.usage.replace(',', '.'));
-        
+
         if (!isNaN(usage)) {
           const [day, month, year] = latestPoint.date.split('.');
           const readingDate = new Date(`${year}-${month}-${day}`);
-          
+
           const consumption = {
             value: usage,
             timestamp: new Date(),
             unit: 'm³' as const,
             readingDate,
           };
-          
+
           await this.influxdbClient.writeAll(consumption, null);
           this.logger.info('Scrape cycle completed successfully');
         } else {
