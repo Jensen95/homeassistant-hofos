@@ -1,44 +1,47 @@
 import winston from 'winston';
 import dotenv from 'dotenv';
-import { HoforScraper } from './scraper.js';
-import { MqttClient } from './mqtt.js';
-import { AddonConfig } from './types.js';
+import { InfluxDBClient } from './influxdb.js';
+import type { AddonConfig } from './types.js';
+import { fetchHoforData } from './fetchHoforData.js';
 
-// Load environment variables
 dotenv.config();
 
-/**
- * Load configuration from environment variables
- */
 function loadConfig(): AddonConfig {
   const config: AddonConfig = {
     hofor: {
-      username: process.env.HOFOR_KUNDENUMMER || '',
-      password: process.env.HOFOR_BS_KUNDENUMMER || '',
+      kundenummer: process.env.HOFOR_KUNDENUMMER || '',
+      bsKundenummer: process.env.HOFOR_BS_KUNDENUMMER || '',
     },
-    mqtt: {
-      broker: process.env.MQTT_BROKER || 'mqtt://localhost:1883',
-      username: process.env.MQTT_USERNAME,
-      password: process.env.MQTT_PASSWORD,
-      clientId: process.env.MQTT_CLIENT_ID || 'hofor-scraper',
-      baseTopic: process.env.MQTT_BASE_TOPIC || 'hofor',
+    influxdb: {
+      url: process.env.INFLUXDB_URL || 'http://a0d7b954-influxdb:8086',
+      token: process.env.INFLUXDB_TOKEN || '',
+      org: process.env.INFLUXDB_ORG || 'homeassistant',
+      bucket: process.env.INFLUXDB_BUCKET || 'homeassistant/autogen',
+    },
+    waterPrice: {
+      pricePerM3: parseFloat(process.env.WATER_PRICE_PER_M3 || '0'),
+      currency: process.env.WATER_PRICE_CURRENCY || 'DKK',
     },
     scrapeIntervalHours: parseInt(process.env.SCRAPE_INTERVAL_HOURS || '3', 10),
     headless: process.env.HEADLESS !== 'false',
     logLevel: (process.env.LOG_LEVEL as 'debug' | 'info' | 'warn' | 'error') || 'info',
+    enableBackfill: process.env.ENABLE_BACKFILL === 'true',
+    backfillDays: parseInt(process.env.BACKFILL_DAYS || '365', 10),
   };
 
-  // Validate required configuration
-  if (!config.hofor.username || !config.hofor.password) {
-    throw new Error('HOFOR credentials not configured. Set HOFOR_USERNAME and HOFOR_PASSWORD');
+  if (!config.hofor.kundenummer || !config.hofor.bsKundenummer) {
+    throw new Error(
+      'HOFOR credentials not configured. Set HOFOR_KUNDENUMMER and HOFOR_BS_KUNDENUMMER'
+    );
+  }
+
+  if (!config.influxdb.token) {
+    throw new Error('InfluxDB token not configured. Set INFLUXDB_TOKEN');
   }
 
   return config;
 }
 
-/**
- * Create Winston logger
- */
 function createLogger(level: string): winston.Logger {
   return winston.createLogger({
     level,
@@ -63,35 +66,20 @@ function createLogger(level: string): winston.Logger {
   });
 }
 
-/**
- * Main application class
- */
 class HoforScraperApp {
-  private scraper: HoforScraper;
-  private mqttClient: MqttClient;
+  private influxdbClient: InfluxDBClient;
   private logger: winston.Logger;
   private config: AddonConfig;
   private intervalId: NodeJS.Timeout | null = null;
   private isShuttingDown: boolean = false;
 
   constructor() {
-    // Load configuration
     this.config = loadConfig();
-
-    // Create logger
     this.logger = createLogger(this.config.logLevel);
-
-    // Create scraper and MQTT client
-    this.scraper = new HoforScraper(this.config.hofor, this.logger, this.config.headless);
-    this.mqttClient = new MqttClient(this.config.mqtt, this.logger);
-
-    // Setup signal handlers for graceful shutdown
+    this.influxdbClient = new InfluxDBClient(this.config.influxdb, this.logger);
     this.setupSignalHandlers();
   }
 
-  /**
-   * Setup signal handlers for graceful shutdown
-   */
   private setupSignalHandlers(): void {
     const signals: NodeJS.Signals[] = ['SIGINT', 'SIGTERM'];
 
@@ -113,9 +101,38 @@ class HoforScraperApp {
     });
   }
 
-  /**
-   * Perform a single scrape and publish cycle
-   */
+  private async backfillHistoricalData(): Promise<void> {
+    if (!this.config.enableBackfill) {
+      this.logger.info('Backfilling is disabled');
+      return;
+    }
+
+    this.logger.info(`Starting backfill for last ${this.config.backfillDays} days...`);
+
+    try {
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - this.config.backfillDays);
+      const endDate = new Date();
+
+      const historicalData = await fetchHoforData({
+        startDate,
+        endDate,
+        kundenummer: this.config.hofor.kundenummer,
+        bsKundenummer: this.config.hofor.bsKundenummer,
+        headless: this.config.headless,
+      });
+
+      if (historicalData.length > 0) {
+        await this.influxdbClient.writeHistoricalData(historicalData);
+        this.logger.info(`Backfill completed: ${historicalData.length} data points`);
+      } else {
+        this.logger.warn('No historical data found to backfill');
+      }
+    } catch (error) {
+      this.logger.error('Failed to backfill historical data', { error });
+    }
+  }
+
   private async scrapeAndPublish(): Promise<void> {
     if (this.isShuttingDown) {
       return;
@@ -124,46 +141,59 @@ class HoforScraperApp {
     this.logger.info('Starting scrape cycle...');
 
     try {
-      // Scrape HOFOR data
-      const result = await this.scraper.scrape();
+      const historicalData = await fetchHoforData({
+        startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+        endDate: new Date(),
+        kundenummer: this.config.hofor.kundenummer,
+        bsKundenummer: this.config.hofor.bsKundenummer,
+        headless: this.config.headless,
+      });
 
-      if (!result.success) {
-        this.logger.error(`Scraping failed: ${result.error}`);
-        return;
+      if (historicalData.length > 0) {
+        const latestPoint = historicalData[historicalData.length - 1];
+        const usage = parseFloat(latestPoint.usage.replace(',', '.'));
+
+        if (!isNaN(usage)) {
+          const [day, month, year] = latestPoint.date.split('.');
+          const readingDate = new Date(`${year}-${month}-${day}`);
+
+          const consumption = {
+            value: usage,
+            timestamp: new Date(),
+            unit: 'm³' as const,
+            readingDate,
+          };
+
+          const price = this.config.waterPrice.pricePerM3 > 0 ? {
+            pricePerM3: this.config.waterPrice.pricePerM3,
+            currency: this.config.waterPrice.currency,
+            timestamp: new Date(),
+          } : null;
+
+          await this.influxdbClient.writeAll(consumption, price);
+          this.logger.info('Scrape cycle completed successfully');
+        } else {
+          this.logger.warn('Latest data point has invalid usage value');
+        }
+      } else {
+        this.logger.warn('No data returned from scrape');
       }
-
-      // Publish to MQTT
-      if (!this.mqttClient.isConnected()) {
-        this.logger.warn('MQTT client not connected, attempting to reconnect...');
-        await this.mqttClient.connect();
-        await this.mqttClient.setupAutoDiscovery();
-      }
-
-      await this.mqttClient.publishAll(result.consumption, result.price);
-      this.logger.info('Scrape cycle completed successfully');
     } catch (error) {
       this.logger.error('Error during scrape cycle', { error });
     }
   }
 
-  /**
-   * Start the application
-   */
   async start(): Promise<void> {
     this.logger.info('Starting HOFOR Scraper Addon...');
     this.logger.info(`Configuration: scrape interval = ${this.config.scrapeIntervalHours} hours`);
 
     try {
-      // Connect to MQTT broker
-      await this.mqttClient.connect();
+      if (this.config.enableBackfill) {
+        await this.backfillHistoricalData();
+      }
 
-      // Setup Home Assistant auto-discovery
-      await this.mqttClient.setupAutoDiscovery();
-
-      // Perform initial scrape
       await this.scrapeAndPublish();
 
-      // Schedule periodic scraping
       const intervalMs = this.config.scrapeIntervalHours * 60 * 60 * 1000;
       this.intervalId = setInterval(() => {
         this.scrapeAndPublish().catch((error) => {
@@ -179,9 +209,6 @@ class HoforScraperApp {
     }
   }
 
-  /**
-   * Shutdown the application gracefully
-   */
   async shutdown(): Promise<void> {
     if (this.isShuttingDown) {
       return;
@@ -190,39 +217,26 @@ class HoforScraperApp {
     this.isShuttingDown = true;
     this.logger.info('Shutting down...');
 
-    // Stop scheduled scraping
     if (this.intervalId) {
       clearInterval(this.intervalId);
       this.intervalId = null;
     }
 
-    // Close scraper (browser)
     try {
-      await this.scraper.close();
+      await this.influxdbClient.close();
     } catch (error) {
-      this.logger.error('Error closing scraper', { error });
-    }
-
-    // Disconnect from MQTT
-    try {
-      await this.mqttClient.disconnect();
-    } catch (error) {
-      this.logger.error('Error disconnecting from MQTT', { error });
+      this.logger.error('Error closing InfluxDB client', { error });
     }
 
     this.logger.info('Shutdown complete');
   }
 }
 
-/**
- * Main entry point
- */
 async function main() {
   const app = new HoforScraperApp();
   await app.start();
 }
 
-// Start the application
 main().catch((error) => {
   console.error('Fatal error:', error);
   process.exit(1);
