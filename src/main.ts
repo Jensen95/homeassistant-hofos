@@ -63,7 +63,6 @@ function createLogger(level: string): winston.Logger {
 }
 
 class HoforScraperApp {
-  private scraper: HoforScraper;
   private influxdbClient: InfluxDBClient;
   private logger: winston.Logger;
   private config: AddonConfig;
@@ -73,7 +72,6 @@ class HoforScraperApp {
   constructor() {
     this.config = loadConfig();
     this.logger = createLogger(this.config.logLevel);
-    this.scraper = new HoforScraper(this.config.hofor, this.logger, this.config.headless);
     this.influxdbClient = new InfluxDBClient(this.config.influxdb, this.logger);
     this.setupSignalHandlers();
   }
@@ -139,15 +137,37 @@ class HoforScraperApp {
     this.logger.info('Starting scrape cycle...');
 
     try {
-      const result = await this.scraper.scrape();
+      const historicalData = await fetchHoforData({
+        startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+        endDate: new Date(),
+        kundenummer: this.config.hofor.kundenummer,
+        bsKundenummer: this.config.hofor.bsKundenummer,
+        headless: this.config.headless,
+      });
 
-      if (!result.success) {
-        this.logger.error(`Scraping failed: ${result.error}`);
-        return;
+      if (historicalData.length > 0) {
+        const latestPoint = historicalData[historicalData.length - 1];
+        const usage = parseFloat(latestPoint.usage.replace(',', '.'));
+        
+        if (!isNaN(usage)) {
+          const [day, month, year] = latestPoint.date.split('.');
+          const readingDate = new Date(`${year}-${month}-${day}`);
+          
+          const consumption = {
+            value: usage,
+            timestamp: new Date(),
+            unit: 'm³' as const,
+            readingDate,
+          };
+          
+          await this.influxdbClient.writeAll(consumption, null);
+          this.logger.info('Scrape cycle completed successfully');
+        } else {
+          this.logger.warn('Latest data point has invalid usage value');
+        }
+      } else {
+        this.logger.warn('No data returned from scrape');
       }
-
-      await this.influxdbClient.writeAll(result.consumption, result.price);
-      this.logger.info('Scrape cycle completed successfully');
     } catch (error) {
       this.logger.error('Error during scrape cycle', { error });
     }
@@ -190,12 +210,6 @@ class HoforScraperApp {
     if (this.intervalId) {
       clearInterval(this.intervalId);
       this.intervalId = null;
-    }
-
-    try {
-      await this.scraper.close();
-    } catch (error) {
-      this.logger.error('Error closing scraper', { error });
     }
 
     try {

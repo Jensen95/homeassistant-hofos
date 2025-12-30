@@ -1,6 +1,11 @@
 import { InfluxDB, Point, WriteApi } from '@influxdata/influxdb-client';
 import { Logger } from 'winston';
-import { InfluxDBConfig, ConsumptionData, PriceData, HistoricalDataPoint } from './types.js';
+import {
+  InfluxDBConfig,
+  ConsumptionData,
+  PriceData,
+  HistoricalDataPoint,
+} from './influxdb.types.js';
 
 const MEASUREMENT_CONSUMPTION = 'water_consumption';
 const MEASUREMENT_PRICE = 'water_price';

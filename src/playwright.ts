@@ -1,5 +1,5 @@
 import { chromium } from 'playwright';
-import { HistoricalDataPoint } from './types.js';
+import { HistoricalDataPoint } from './influxdb.types.js';
 
 const HOFOR_LOGIN_URL =
   'https://prod.tastselvservice.dk/Account/LogOn?ReturnUrl=/Consumption/RedirectToHOFORForbrug';

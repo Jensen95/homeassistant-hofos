@@ -1,49 +1,54 @@
 # HOFOR Scraper - Home Assistant Addon
 
-A standalone Home Assistant addon that scrapes HOFOR (Hovedstadens Forsyningsselskab) water consumption data and pricing information, supporting both MQTT (for Home Assistant integration) and InfluxDB (for time-series data storage).
+A standalone Home Assistant addon that scrapes HOFOR (Hovedstadens Forsyningsselskab) water consumption data and stores it in InfluxDB for time-series data storage and analysis.
 
 ## Features
 
 - 🔐 **Direct Login**: Uses HOFOR's standard login (no MitID required)
-- 📊 **Dual Data Points**: Tracks consumption (m³) and price (DKK/m³)
-- 🏠 **Home Assistant Integration**: Optional MQTT with automatic discovery for seamless setup
-- 💾 **InfluxDB Support**: Optional time-series database storage for historical data
+- 📊 **Water Consumption Tracking**: Tracks daily consumption in m³
+- 💾 **InfluxDB Storage**: Time-series database storage for historical data
 - 📈 **Historical Backfilling**: Automatically backfills up to 2 years of historical data
 - 🔄 **Scheduled Scraping**: Configurable interval (default: every 3 hours)
-- 🛡️ **Robust Error Handling**: Exponential backoff retry logic with configurable retries
+- 🛡️ **Robust Error Handling**: Exponential backoff retry logic (3 attempts with increasing delays)
 - 🐳 **Docker Optimized**: Multi-stage Alpine build with Playwright Chromium
-- 📝 **TypeScript**: Full type safety and modern async/await patterns
+- 📝 **TypeScript**: Full type safety with colocated types and modern async/await patterns
 
 ## Architecture
 
 ```
-┌─────────────────┐    MQTT     ┌──────────────────┐
-│ TypeScript Addon│ ──────────→ │ Home Assistant   │
-│ (Playwright)    │             │ (MQTT Sensor)    │
-└─────────────────┘             └──────────────────┘
-        │
-        │ InfluxDB Line Protocol
-        ▼
-┌─────────────────┐
-│   InfluxDB      │
-│ (Time Series DB)│
-└─────────────────┘
-        │
-        ▼
-┌─────────────────┐
-│   HOFOR Min Side│
-└─────────────────┘
+┌─────────────────────┐
+│ TypeScript Addon    │
+│ (Playwright)        │
+│  - Fetches CSV data │
+│  - Parses DD.MM.YYYY│
+│  - Handles Danish   │
+│    decimal format   │
+└──────────┬──────────┘
+           │
+           │ InfluxDB Line Protocol
+           ▼
+┌─────────────────────┐
+│   InfluxDB          │
+│ (Time Series DB)    │
+│  - water_consumption│
+│  - Tagged data      │
+└──────────┬──────────┘
+           │
+           │ HTTPS
+           ▼
+┌─────────────────────┐
+│   HOFOR Min Side    │
+│ prod.tastselvservice│
+└─────────────────────┘
 ```
 
 ## Installation
 
 ### Prerequisites
 
-- HOFOR account credentials
-- **Either**:
-  - Home Assistant with Mosquitto MQTT broker addon installed (for MQTT integration)
-  - InfluxDB instance (for time-series data storage)
-  - Both (for dual storage)
+- HOFOR account credentials (kundenummer and bs-kundenummer)
+- InfluxDB instance (Home Assistant InfluxDB addon recommended)
+- Home Assistant Supervisor (for addon installation)
 
 ### Manual Installation (Standalone)
 
@@ -65,25 +70,13 @@ git clone https://github.com/yourusername/homeassistant-hofos.git hofor-scraper
 
 Configure these options in the Home Assistant addon configuration page:
 
-#### MQTT Configuration (Optional)
 ```yaml
 hofor_kundenummer: "7xxxxxxx"
 hofor_bs_kundenummer: "8xxxxxxx"
-mqtt_broker: "mqtt://core-mosquitto:1883"
-mqtt_username: ""  # Optional
-mqtt_password: ""  # Optional
-scrape_interval_hours: 3
-log_level: "info"
-```
-
-#### InfluxDB Configuration (Optional)
-```yaml
-hofor_kundenummer: "7xxxxxxx"
-hofor_bs_kundenummer: "8xxxxxxx"
-influxdb_url: "http://localhost:8086"
+influxdb_url: "http://a0d7b954-influxdb:8086"  # Home Assistant InfluxDB addon default
 influxdb_token: "your_influxdb_token"
-influxdb_org: "your_org"
-influxdb_bucket: "hofor"
+influxdb_org: "homeassistant"
+influxdb_bucket: "homeassistant/autogen"
 enable_backfill: true
 backfill_days: 365
 scrape_interval_hours: 3
@@ -92,21 +85,16 @@ log_level: "info"
 
 | Option | Required | Default | Description |
 |--------|----------|---------|-------------|
-| `hofor_kundenummer` | Yes | - | Your HOFOR kundenummer |
-| `hofor_bs_kundenummer` | Yes | - | Your HOFOR bs-kundenummer |
-| `mqtt_broker` | No* | - | MQTT broker URL |
-| `mqtt_username` | No | - | MQTT username (if authentication enabled) |
-| `mqtt_password` | No | - | MQTT password (if authentication enabled) |
-| `influxdb_url` | No* | - | InfluxDB server URL |
-| `influxdb_token` | No* | - | InfluxDB authentication token |
-| `influxdb_org` | No* | - | InfluxDB organization name |
-| `influxdb_bucket` | No | `hofor` | InfluxDB bucket name |
+| `hofor_kundenummer` | Yes | - | Your HOFOR kundenummer (7-digit) |
+| `hofor_bs_kundenummer` | Yes | - | Your HOFOR bs-kundenummer (8-digit) |
+| `influxdb_url` | No | `http://a0d7b954-influxdb:8086` | InfluxDB server URL (HA addon default) |
+| `influxdb_token` | Yes | - | InfluxDB authentication token |
+| `influxdb_org` | No | `homeassistant` | InfluxDB organization name |
+| `influxdb_bucket` | No | `homeassistant/autogen` | InfluxDB bucket name |
 | `enable_backfill` | No | `true` | Enable historical data backfilling |
 | `backfill_days` | No | `365` | Number of days to backfill (1-730) |
-| `scrape_interval_hours` | Yes | `3` | Hours between scraping attempts (1-24) |
-| `log_level` | Yes | `info` | Logging level: debug, info, warn, error |
-
-\* Either MQTT or InfluxDB configuration is required. Both can be configured for dual storage.
+| `scrape_interval_hours` | No | `3` | Hours between scraping attempts (1-24) |
+| `log_level` | No | `info` | Logging level: debug, info, warn, error |
 
 ### Local Development
 
@@ -144,7 +132,7 @@ npm run dev
 
 ## InfluxDB Integration
 
-When InfluxDB is configured, the addon stores data in two measurements:
+The addon stores water consumption data in InfluxDB:
 
 ### Water Consumption Measurement
 
@@ -155,17 +143,13 @@ When InfluxDB is configured, the addon stores data in two measurements:
   - `unit`: m³
   - `source`: hofor-scraper
   - `backfilled`: true/false (indicates if data was backfilled)
-- **Timestamp**: Date of the consumption reading
+- **Timestamp**: Date of the consumption reading (DD.MM.YYYY format from HOFOR)
 
-### Water Price Measurement
+### Data Format
 
-- **Measurement**: `water_price`
-- **Fields**:
-  - `price_per_m3` (float): Price per m³
-- **Tags**:
-  - `currency`: DKK
-  - `source`: hofor-scraper
-- **Timestamp**: Date when price was retrieved
+- **Date Parsing**: Handles Danish date format (DD.MM.YYYY)
+- **Decimal Parsing**: Supports Danish decimal format with comma (e.g., "10,5" → 10.5)
+- **Validation**: Skips invalid dates and usage values automatically
 
 ### Backfilling
 
@@ -180,42 +164,20 @@ When `enable_backfill: true` is set, the addon will:
 Example Flux query to get daily consumption:
 
 ```flux
-from(bucket: "hofor")
+from(bucket: "homeassistant/autogen")
   |> range(start: -30d)
   |> filter(fn: (r) => r._measurement == "water_consumption")
   |> filter(fn: (r) => r._field == "value")
 ```
 
-## Home Assistant Sensors (MQTT Mode)
+Example to get only fresh data (excluding backfilled):
 
-When MQTT is configured, the addon will create two sensors in Home Assistant:
-
-### Water Consumption Sensor
-
-- **Entity ID**: `sensor.hofor_consumption`
-- **Unit**: m³
-- **Device Class**: water
-- **State Class**: total_increasing
-
-### Price Sensor
-
-- **Entity ID**: `sensor.hofor_price_per_m3`
-- **Unit**: DKK/m³
-- **Icon**: mdi:currency-usd
-
-### Example Usage
-
-Create a template sensor in Home Assistant to calculate daily cost:
-
-```yaml
-template:
-  - sensor:
-      - name: "HOFOR Daily Cost"
-        unit_of_measurement: "DKK"
-        state: >
-          {% set consumption = states('sensor.hofor_consumption') | float %}
-          {% set price = states('sensor.hofor_price_per_m3') | float %}
-          {{ (consumption * price) | round(2) }}
+```flux
+from(bucket: "homeassistant/autogen")
+  |> range(start: -30d)
+  |> filter(fn: (r) => r._measurement == "water_consumption")
+  |> filter(fn: (r) => r._field == "value")
+  |> filter(fn: (r) => r.backfilled != "true")
 ```
 
 ## Development
@@ -231,16 +193,38 @@ hofor-addon/
 ├── config.yaml           # Home Assistant addon metadata
 ├── .env.example          # Environment variables template
 ├── src/
-│   ├── types.ts          # TypeScript interfaces
-│   ├── scraper.ts        # Playwright scraping logic (existing scraper)
-│   ├── playwright.ts     # Enhanced Playwright scraper with retry logic
-│   ├── mqtt.ts           # MQTT client with auto-discovery
+│   ├── types.ts          # Global TypeScript interfaces
+│   ├── influxdb.types.ts # InfluxDB-specific type definitions
 │   ├── influxdb.ts       # InfluxDB client for time-series storage
+│   ├── influxdb.test.ts  # InfluxDB client unit tests (TDD approach)
+│   ├── playwright.ts     # Enhanced Playwright scraper with retry logic
 │   └── main.ts           # Main application orchestration
 └── tests/
-    ├── scraper.test.ts   # Scraper unit tests
-    ├── mqtt.test.ts      # MQTT client unit tests
     └── influxdb.test.ts  # InfluxDB client unit tests
+```
+
+### Colocated Types
+
+Types are colocated with their respective modules:
+- **influxdb.types.ts**: InfluxDB-specific types (ConsumptionData, PriceData, HistoricalDataPoint, InfluxDBConfig)
+- **types.ts**: Global application types (AddonConfig, HoforCredentials, ScraperResult, ScraperError)
+
+### Testing Approach
+
+The project uses **Test-Driven Development (TDD)** principles:
+- Tests validate actual data parsing and transformations, not just log output
+- Mock InfluxDB Point objects capture and verify field values, tags, and timestamps
+- Tests cover edge cases: invalid dates, Danish decimal format, null handling
+
+Example test structure:
+```typescript
+it('should parse Danish decimal format with comma', async () => {
+  const historicalData = [{ date: '15.03.2024', usage: '25,75', metric: 'm³' }];
+  await influxdbClient.writeHistoricalData(historicalData);
+  
+  const point = mockPoints[0];
+  expect(point.getField('value')).toBe(25.75); // Verifies parsing, not logs
+});
 ```
 
 ### Available Scripts
@@ -276,18 +260,7 @@ Build the Docker image locally:
 docker build -t hofor-scraper .
 ```
 
-Run the container with MQTT:
-
-```bash
-docker run -d \
-  --name hofor-scraper \
-  -e HOFOR_KUNDENUMMER=7xxxxxxx \
-  -e HOFOR_BS_KUNDENUMMER=8xxxxxxx \
-  -e MQTT_BROKER=mqtt://localhost:1883 \
-  hofor-scraper
-```
-
-Run the container with InfluxDB:
+Run the container:
 
 ```bash
 docker run -d \
@@ -296,8 +269,8 @@ docker run -d \
   -e HOFOR_BS_KUNDENUMMER=8xxxxxxx \
   -e INFLUXDB_URL=http://localhost:8086 \
   -e INFLUXDB_TOKEN=your_token \
-  -e INFLUXDB_ORG=your_org \
-  -e INFLUXDB_BUCKET=hofor \
+  -e INFLUXDB_ORG=homeassistant \
+  -e INFLUXDB_BUCKET=homeassistant/autogen \
   -e ENABLE_BACKFILL=true \
   -e BACKFILL_DAYS=365 \
   hofor-scraper
@@ -314,14 +287,14 @@ If scraping fails, check the addon logs:
 3. Verify your HOFOR credentials are correct
 4. Ensure HOFOR website structure hasn't changed
 
-### MQTT Connection Issues
+### InfluxDB Connection Issues
 
-If sensors don't appear in Home Assistant:
+If data doesn't appear in InfluxDB:
 
-1. Verify Mosquitto addon is running
-2. Check MQTT broker URL is correct
-3. Enable MQTT logging in Home Assistant
-4. Verify MQTT credentials if authentication is enabled
+1. Verify InfluxDB addon is running
+2. Check InfluxDB URL is correct (default: `http://a0d7b954-influxdb:8086`)
+3. Verify InfluxDB token has write permissions for the bucket
+4. Check InfluxDB organization and bucket names match your configuration
 
 ### Browser Issues
 
@@ -340,24 +313,13 @@ If Playwright fails to launch:
 - **Duplicate Data**: InfluxDB automatically handles duplicate data points by overwriting them based on timestamp
 - **Backfilling**: Historical data backfilling is performed once at startup when enabled. It can take a few minutes depending on the number of days configured
 
-## Data Storage Comparison
-
-| Feature | MQTT | InfluxDB |
-|---------|------|----------|
-| Real-time updates | ✓ | ✓ |
-| Historical storage | Limited | ✓ |
-| Backfilling support | ✗ | ✓ |
-| Home Assistant integration | ✓ (native) | ✓ (via integration) |
-| Query capabilities | Limited | Advanced (Flux) |
-| Data retention | Depends on HA | Configurable |
-| Resource usage | Low | Medium |
-
 ## TODO
 
 - [x] Add retry logic with exponential backoff
 - [x] Implement InfluxDB integration
 - [x] Add historical data backfilling
-- [x] Expose water price sensor
+- [x] Colocate types with their respective modules
+- [x] Use TDD approach for tests (validate data parsing, not logs)
 - [ ] Update DOM selectors based on actual HOFOR page structure
 - [ ] Add support for multi-architecture Docker builds (arm64, armv7)
 - [ ] Create GitHub Actions CI/CD pipeline
@@ -380,7 +342,6 @@ MIT License - see LICENSE file for details
 ## Acknowledgments
 
 - Built with [Playwright](https://playwright.dev/) for reliable web scraping
-- Uses [MQTT.js](https://github.com/mqttjs/MQTT.js) for MQTT communication
 - Uses [InfluxDB Client](https://github.com/influxdata/influxdb-client-js) for time-series data storage
 - Logging powered by [Winston](https://github.com/winstonjs/winston)
 - Testing with [Vitest](https://vitest.dev/)
