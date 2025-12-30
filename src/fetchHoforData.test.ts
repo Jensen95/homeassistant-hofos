@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { fetchHoforData, type FetchOptions } from './fetchHoforData.js';
-import type { HistoricalDataPoint } from './influxdb.types.js';
 
 vi.mock('playwright', () => ({
   chromium: {

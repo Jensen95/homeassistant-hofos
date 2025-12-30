@@ -25,70 +25,76 @@ export interface FetchOptions {
   headless?: boolean;
 }
 
-function formatDate(date: Date): string {
+const formatDate = (date: Date): string => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
-}
+};
 
-function parseCSV(csvData: string): HistoricalDataPoint[] {
+const parseCSV = (csvData: string): HistoricalDataPoint[] => {
   return csvData
     .split('\n')
     .map((line) => line.trim())
     .filter((line) => line.length > 0)
     .reduce((acc, line) => {
       const [date, usage, metric] = line.split(';');
-      
+
       if (!date || !usage || usage === CSV_HEADER_VALUE || usage === CSV_INVALID_VALUE) {
         return acc;
       }
-      
+
       acc.push({ date, usage, metric: metric || '' });
       return acc;
     }, [] as HistoricalDataPoint[]);
-}
+};
 
-async function handleCookieConsent(page: Page): Promise<void> {
+const handleCookieConsent = async (page: Page): Promise<void> => {
   try {
-    await page.getByRole('alert', { name: 'Kun nødvendige cookies' }).click({ timeout: COOKIE_TIMEOUT });
+    await page
+      .getByRole('alert', { name: 'Kun nødvendige cookies' })
+      .click({ timeout: COOKIE_TIMEOUT });
   } catch {
     console.warn('Cookie consent button not found or already accepted');
   }
-}
+};
 
-async function handleTrackingRejection(page: Page): Promise<void> {
+const handleTrackingRejection = async (page: Page): Promise<void> => {
   try {
     await page.getByRole('alert', { name: 'Afvis alle' }).click({ timeout: COOKIE_TIMEOUT });
   } catch {
     console.warn('Tracking cookie rejection button not found');
   }
-}
+};
 
-async function performLogin(page: Page, kundenummer: string, bsKundenummer: string): Promise<void> {
+const performLogin = async (
+  page: Page,
+  kundenummer: string,
+  bsKundenummer: string
+): Promise<void> => {
   await page.getByRole('spinbutton', { name: 'Kundenummer (7xxxxxxx)' }).fill(kundenummer);
   await page.getByRole('spinbutton', { name: 'BS-kundenummer (8xxxxxxx)' }).fill(bsKundenummer);
   await page.getByRole('button', { name: 'Log ind' }).click();
   await page.getByRole('button', { name: 'klikke her' }).click();
-}
+};
 
-async function extractCSVParameters(page: Page): Promise<URLSearchParams> {
+const extractCSVParameters = async (page: Page): Promise<URLSearchParams> => {
   const dataResponsePromise = page.waitForResponse('**/wp-admin/admin-ajax.php');
   await page.getByRole('tab', { name: 'Dag' }).click();
   const response = await dataResponsePromise;
-  
+
   const request = response.request();
   const body = new URLSearchParams(request.postData() || '');
-  
-  return body;
-}
 
-async function downloadCSV(
+  return body;
+};
+
+const downloadCSV = async (
   headers: Record<string, string>,
   params: URLSearchParams,
   startDate: Date,
   endDate: Date
-): Promise<string> {
+): Promise<string> => {
   const csvBody = new URLSearchParams();
   csvBody.set('action', 'get_csv_data');
   csvBody.set('iid', params.get('iid') || '');
@@ -105,9 +111,9 @@ async function downloadCSV(
 
   const jsonResponse = (await csvResponse.json()) as HoforCsvResponse;
   return jsonResponse.data;
-}
+};
 
-async function fetchHoforDataInternal(options: FetchOptions): Promise<HistoricalDataPoint[]> {
+const fetchHoforDataInternal = async (options: FetchOptions): Promise<HistoricalDataPoint[]> => {
   const {
     startDate = new Date(new Date().setFullYear(new Date().getFullYear() - 1)),
     endDate = new Date(),
@@ -138,9 +144,9 @@ async function fetchHoforDataInternal(options: FetchOptions): Promise<Historical
     if (context) await context.close();
     if (browser) await browser.close();
   }
-}
+};
 
-async function fetchWithRetry(options: FetchOptions): Promise<HistoricalDataPoint[]> {
+const fetchWithRetry = async (options: FetchOptions): Promise<HistoricalDataPoint[]> => {
   let lastError: Error | null = null;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -162,7 +168,7 @@ async function fetchWithRetry(options: FetchOptions): Promise<HistoricalDataPoin
   throw new Error(
     `Failed to fetch HOFOR data after ${MAX_RETRIES} attempts: ${lastError?.message}`
   );
-}
+};
 
 export const fetchHoforData = async (options: FetchOptions): Promise<HistoricalDataPoint[]> => {
   return fetchWithRetry(options);
