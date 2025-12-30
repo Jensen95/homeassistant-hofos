@@ -1,8 +1,10 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { InfluxDBClient } from './influxdb.js';
-import { Logger } from 'winston';
-import type { ConsumptionData, PriceData, HistoricalDataPoint } from './influxdb.types.js';
 import { Point } from '@influxdata/influxdb-client';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { Logger } from 'winston';
+
+import type { ConsumptionData, HistoricalDataPoint, PriceData } from './influxdb.types.js';
+
+import { InfluxDBClient } from './influxdb.js';
 
 const mockWriteApi = {
   useDefaultTags: vi.fn(),
