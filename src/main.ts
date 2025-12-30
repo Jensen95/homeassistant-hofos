@@ -164,11 +164,14 @@ class HoforScraperApp {
             readingDate,
           };
 
-          const price = this.config.waterPrice.pricePerM3 > 0 ? {
-            pricePerM3: this.config.waterPrice.pricePerM3,
-            currency: this.config.waterPrice.currency,
-            timestamp: new Date(),
-          } : null;
+          const price =
+            this.config.waterPrice.pricePerM3 > 0
+              ? {
+                  pricePerM3: this.config.waterPrice.pricePerM3,
+                  currency: this.config.waterPrice.currency,
+                  timestamp: new Date(),
+                }
+              : null;
 
           await this.influxdbClient.writeAll(consumption, price);
           this.logger.info('Scrape cycle completed successfully');
