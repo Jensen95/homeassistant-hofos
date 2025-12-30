@@ -11,7 +11,12 @@ const mockWriteApi = {
   close: vi.fn().mockResolvedValue(undefined),
 };
 
-const mockPoints: Point[] = [];
+const mockPoints: (Point & {
+  getMeasurement(): string;
+  getField(name: string): number | undefined;
+  getTag(name: string): string | undefined;
+  getTimestamp(): Date | undefined;
+})[] = [];
 
 vi.mock('@influxdata/influxdb-client', () => ({
   InfluxDB: class {
