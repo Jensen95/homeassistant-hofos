@@ -1,7 +1,5 @@
-# Stage 1: Build
-FROM node:24-alpine AS builder
+FROM node:24.1.0-alpine3.20 AS builder
 
-# Install dependencies for Playwright
 RUN apk add --no-cache \
     python3 \
     make \
@@ -9,23 +7,26 @@ RUN apk add --no-cache \
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+COPY package.json package-lock.json ./
 COPY tsconfig.json ./
 
-# Install dependencies
 RUN npm ci
 
-# Copy source code
 COPY src ./src
 
-# Build TypeScript
 RUN npm run build
 
-# Stage 2: Runtime
-FROM node:24-alpine
+FROM node:24.1.0-alpine3.20
 
-# Install Chromium and dependencies for Playwright
+ARG VERSION=dev
+ARG COMMIT_SHA=unknown
+
+LABEL org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.revision="${COMMIT_SHA}" \
+      org.opencontainers.image.title="HOFOR Scraper" \
+      org.opencontainers.image.description="Home Assistant addon for scraping HOFOR water consumption data" \
+      org.opencontainers.image.source="https://github.com/Jensen95/homeassistant-hofos"
+
 RUN apk add --no-cache \
     chromium \
     nss \
@@ -35,29 +36,23 @@ RUN apk add --no-cache \
     ttf-freefont \
     dbus
 
-# Set Playwright environment variables to use system Chromium
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 \
     PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 WORKDIR /app
 
-# Copy package files and install production dependencies only
-COPY package*.json ./
-RUN npm ci --only=production
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
 
-# Copy built application from builder stage
 COPY --from=builder /app/dist ./dist
 
-# Create non-root user
 RUN addgroup -g 1000 hofor && \
     adduser -D -u 1000 -G hofor hofor && \
     chown -R hofor:hofor /app
 
 USER hofor
 
-# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD node -e "console.log('OK')" || exit 1
 
-# Start the application
 CMD ["node", "dist/main.js"]
