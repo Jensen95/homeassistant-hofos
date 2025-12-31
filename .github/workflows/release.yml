@@ -63,8 +63,8 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/hofor-scraper-amd64:${{ steps.get_version.outputs.version_number }}
-            ghcr.io/${{ github.repository_owner }}/hofor-scraper-amd64:latest
+            ${{ steps.get_version.outputs.version_number }}
+            latest
           build-args: |
             VERSION=${{ steps.get_version.outputs.version_number }}
             COMMIT_SHA=${{ github.sha }}
