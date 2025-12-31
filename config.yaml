@@ -1,8 +1,8 @@
 name: HOFOR Scraper
-version: '1.0.0'
+version: '0.1.0'
 slug: hofor_scraper
 description: Scrapes HOFOR consumption data and publishes to InfluxDB
-url: https://github.com/yourusername/homeassistant-hofos
+url: https://github.com/Jensen95/homeassistant-hofos
 arch:
   - amd64
 startup: application
@@ -36,4 +36,4 @@ schema:
   enable_backfill: bool?
   backfill_days: int(1,730)?
   log_level: list(debug|info|warn|error)
-image: ghcr.io/yourusername/hofor-scraper-{arch}
+image: ghcr.io/jensen95/hofor-scraper-{arch}

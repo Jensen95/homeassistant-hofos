@@ -1,8 +1,10 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { InfluxDBClient } from './influxdb.js';
-import { Logger } from 'winston';
-import type { ConsumptionData, PriceData, HistoricalDataPoint } from './influxdb.types.js';
 import { Point } from '@influxdata/influxdb-client';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { Logger } from 'winston';
+
+import type { ConsumptionData, HistoricalDataPoint, PriceData } from './influxdb.types.js';
+
+import { InfluxDBClient } from './influxdb.js';
 
 const mockWriteApi = {
   useDefaultTags: vi.fn(),
@@ -33,7 +35,7 @@ vi.mock('@influxdata/influxdb-client', () => ({
 
     constructor(measurement: string) {
       this._measurement = measurement;
-      mockPoints.push(this as any);
+      mockPoints.push(this as MockPoint & Point);
     }
 
     floatField(name: string, value: number) {
@@ -112,7 +114,7 @@ describe('InfluxDBClient', () => {
       await influxdbClient.writeConsumption(consumption);
 
       expect(mockPoints.length).toBe(1);
-      const point = mockPoints[0] as any;
+      const point = mockPoints[0];
       expect(point.getMeasurement()).toBe('water_consumption');
       expect(point.getField('value')).toBe(123.45);
       expect(point.getTag('unit')).toBe('m³');
@@ -124,7 +126,7 @@ describe('InfluxDBClient', () => {
     it('should use readingDate when provided', async () => {
       const readingDate = new Date('2024-01-14T00:00:00Z');
       const consumption: ConsumptionData = {
-        value: 50.0,
+        value: 50,
         timestamp: new Date('2024-01-15T10:00:00Z'),
         unit: 'm³',
         readingDate,
@@ -133,7 +135,7 @@ describe('InfluxDBClient', () => {
       await influxdbClient.writeConsumption(consumption);
 
       expect(mockPoints.length).toBe(1);
-      const point = mockPoints[0] as any;
+      const point = mockPoints[0];
       expect(point.getTimestamp()).toEqual(readingDate);
     });
   });
@@ -149,7 +151,7 @@ describe('InfluxDBClient', () => {
       await influxdbClient.writePrice(price);
 
       expect(mockPoints.length).toBe(1);
-      const point = mockPoints[0] as any;
+      const point = mockPoints[0];
       expect(point.getMeasurement()).toBe('water_price');
       expect(point.getField('price_per_m3')).toBe(5.67);
       expect(point.getTag('currency')).toBe('DKK');
@@ -170,14 +172,14 @@ describe('InfluxDBClient', () => {
 
       expect(mockPoints.length).toBe(2);
 
-      const point1 = mockPoints[0] as any;
+      const point1 = mockPoints[0];
       expect(point1.getMeasurement()).toBe('water_consumption');
       expect(point1.getField('value')).toBe(10.5);
       expect(point1.getTag('unit')).toBe('m³');
       expect(point1.getTag('backfilled')).toBe('true');
       expect(point1.getTimestamp()).toEqual(new Date('2024-01-01T00:00:00Z'));
 
-      const point2 = mockPoints[1] as any;
+      const point2 = mockPoints[1];
       expect(point2.getField('value')).toBe(12.3);
       expect(point2.getTimestamp()).toEqual(new Date('2024-01-02T00:00:00Z'));
 
@@ -194,7 +196,7 @@ describe('InfluxDBClient', () => {
       await influxdbClient.writeHistoricalData(historicalData);
 
       expect(mockPoints.length).toBe(1);
-      const point = mockPoints[0] as any;
+      const point = mockPoints[0];
       expect(point.getField('value')).toBe(12.3);
       expect(mockLogger.warn).toHaveBeenCalledWith('Skipping invalid usage value: invalid');
       expect(mockLogger.warn).toHaveBeenCalledWith('Skipping invalid usage value: NaN');
@@ -210,7 +212,7 @@ describe('InfluxDBClient', () => {
       await influxdbClient.writeHistoricalData(historicalData);
 
       expect(mockPoints.length).toBe(1);
-      const point = mockPoints[0] as any;
+      const point = mockPoints[0];
       expect(point.getField('value')).toBe(12.3);
       expect(point.getTimestamp()).toEqual(new Date('2024-01-02T00:00:00Z'));
       expect(mockLogger.warn).toHaveBeenCalledWith('Skipping invalid date: invalid');
@@ -225,7 +227,7 @@ describe('InfluxDBClient', () => {
       await influxdbClient.writeHistoricalData(historicalData);
 
       expect(mockPoints.length).toBe(1);
-      const point = mockPoints[0] as any;
+      const point = mockPoints[0];
       expect(point.getField('value')).toBe(25.75);
     });
   });

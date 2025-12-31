@@ -1,6 +1,6 @@
 {
   "name": "hofor-scraper-addon",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Home Assistant addon for scraping HOFOR consumption data and pricing",
   "main": "dist/main.js",
   "type": "module",
@@ -12,7 +12,10 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
     "lint": "eslint src/**/*.ts",
-    "format": "prettier --write \"src/**/*.ts\""
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "commit": "cz",
+    "sync-version": "node scripts/sync-version.ts"
   },
   "keywords": [
     "home-assistant",
@@ -34,10 +37,17 @@
     "@typescript-eslint/eslint-plugin": "^8.50.0",
     "@typescript-eslint/parser": "^8.50.0",
     "@vitest/coverage-v8": "^4.0.16",
+    "@vitest/eslint-plugin": "^1.6.4",
     "@vitest/ui": "^4.0.16",
+    "commitizen": "^4.3.1",
+    "cz-conventional-changelog": "^3.3.0",
     "eslint": "^9.39.2",
+    "eslint-plugin-perfectionist": "^5.1.0",
+    "eslint-plugin-unicorn": "^62.0.0",
+    "globals": "^16.5.0",
     "prettier": "^3.7.4",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.51.0",
     "vitest": "^4.0.16"
   },
   "engines": {
@@ -45,5 +55,10 @@
   },
   "wallaby": {
     "reportConsoleErrorAsError": true
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
   }
 }

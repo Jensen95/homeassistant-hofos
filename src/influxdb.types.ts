@@ -1,25 +1,25 @@
 export interface ConsumptionData {
-  value: number;
+  readingDate?: Date;
   timestamp: Date;
   unit: 'm³';
-  readingDate?: Date;
+  value: number;
 }
 
 export interface HistoricalDataPoint {
   date: string;
-  usage: string;
   metric: string;
-}
-
-export interface PriceData {
-  pricePerM3: number;
-  currency: string;
-  timestamp: Date;
+  usage: string;
 }
 
 export interface InfluxDBConfig {
-  url: string;
-  token: string;
-  org: string;
   bucket: string;
+  org: string;
+  token: string;
+  url: string;
+}
+
+export interface PriceData {
+  currency: string;
+  pricePerM3: number;
+  timestamp: Date;
 }

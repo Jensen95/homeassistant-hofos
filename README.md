@@ -44,25 +44,39 @@ A standalone Home Assistant addon that scrapes HOFOR (Hovedstadens Forsyningssel
 
 ## Installation
 
-### Prerequisites
+### Home Assistant Addon Repository (Recommended)
 
-- HOFOR account credentials (kundenummer and bs-kundenummer)
-- InfluxDB instance (Home Assistant InfluxDB addon recommended)
-- Home Assistant Supervisor (for addon installation)
+1. **Add this repository to Home Assistant:**
+   - Navigate to **Supervisor → Add-on Store → ⋮ (menu) → Repositories**
+   - Add the repository URL: `https://github.com/Jensen95/homeassistant-hofos`
+   - The addon store will refresh automatically
 
-### Manual Installation (Standalone)
+2. **Install the addon:**
+   - Find "HOFOR Scraper" in the addon store
+   - Click on it and press "INSTALL"
+
+3. **Configure the addon:**
+   - Go to the "Configuration" tab
+   - Set your HOFOR credentials and InfluxDB settings (see Configuration section below)
+
+4. **Start the addon:**
+   - Go to the "Info" tab and click "START"
+
+### Manual Installation (Development)
+
+For development or if you want to customize the addon:
 
 1. Clone this repository into your Home Assistant addons directory:
 
 ```bash
 cd /addons
-git clone https://github.com/yourusername/homeassistant-hofos.git hofor-scraper
+git clone https://github.com/Jensen95/homeassistant-hofos.git hofor-scraper
 ```
 
-1. Refresh the Home Assistant Supervisor addon list
-2. Install the "HOFOR Scraper" addon
-3. Configure the addon (see Configuration section)
-4. Start the addon
+2. Refresh the Home Assistant Supervisor addon list
+3. Install the "HOFOR Scraper" addon
+4. Configure the addon (see Configuration section)
+5. Start the addon
 
 ## Configuration
 

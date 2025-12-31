@@ -1,4 +1,5 @@
-import { chromium, type Browser, type BrowserContext, type Page } from 'playwright';
+import { type Browser, type BrowserContext, chromium, type Page } from 'playwright';
+
 import type { HistoricalDataPoint } from './influxdb.types.js';
 
 const HOFOR_LOGIN_URL =
@@ -8,21 +9,21 @@ const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 5000;
 const CSV_HEADER_VALUE = 'Forbrug';
 const CSV_INVALID_VALUE = '#N/A';
-const PAGE_TIMEOUT = 30000;
+const PAGE_TIMEOUT = 30_000;
 const COOKIE_TIMEOUT = 5000;
 
-interface HoforCsvResponse {
-  status: 'success' | 'error';
-  data: string;
-  fileName: string;
+export interface FetchOptions {
+  bsKundenummer: string;
+  endDate?: Date;
+  headless?: boolean;
+  kundenummer: string;
+  startDate?: Date;
 }
 
-export interface FetchOptions {
-  startDate?: Date;
-  endDate?: Date;
-  kundenummer: string;
-  bsKundenummer: string;
-  headless?: boolean;
+interface HoforCsvResponse {
+  data: string;
+  fileName: string;
+  status: 'error' | 'success';
 }
 
 const formatDate = (date: Date): string => {
@@ -37,15 +38,15 @@ const parseCSV = (csvData: string): HistoricalDataPoint[] => {
     .split('\n')
     .map((line) => line.trim())
     .filter((line) => line.length > 0)
-    .reduce((acc, line) => {
+    .reduce((accumulator, line) => {
       const [date, usage, metric] = line.split(';');
 
       if (!date || !usage || usage === CSV_HEADER_VALUE || usage === CSV_INVALID_VALUE) {
-        return acc;
+        return accumulator;
       }
 
-      acc.push({ date, usage, metric: metric || '' });
-      return acc;
+      accumulator.push({ date, metric: metric || '', usage });
+      return accumulator;
     }, [] as HistoricalDataPoint[]);
 };
 
@@ -91,22 +92,22 @@ const extractCSVParameters = async (page: Page): Promise<URLSearchParams> => {
 
 const downloadCSV = async (
   headers: Record<string, string>,
-  params: URLSearchParams,
+  parameters: URLSearchParams,
   startDate: Date,
   endDate: Date
 ): Promise<string> => {
   const csvBody = new URLSearchParams();
   csvBody.set('action', 'get_csv_data');
-  csvBody.set('iid', params.get('iid') || '');
-  csvBody.set('cid', params.get('cid') || '');
-  csvBody.set('access_key', params.get('access_key') || '');
+  csvBody.set('iid', parameters.get('iid') || '');
+  csvBody.set('cid', parameters.get('cid') || '');
+  csvBody.set('access_key', parameters.get('access_key') || '');
   csvBody.set('sdate', formatDate(startDate));
   csvBody.set('edate', formatDate(endDate));
 
   const csvResponse = await fetch(HOFOR_CSV_ENDPOINT, {
+    body: csvBody.toString(),
     headers,
     method: 'POST',
-    body: csvBody.toString(),
   });
 
   const jsonResponse = (await csvResponse.json()) as HoforCsvResponse;
@@ -115,29 +116,30 @@ const downloadCSV = async (
 
 const fetchHoforDataInternal = async (options: FetchOptions): Promise<HistoricalDataPoint[]> => {
   const {
-    startDate = new Date(new Date().setFullYear(new Date().getFullYear() - 1)),
-    endDate = new Date(),
-    kundenummer,
     bsKundenummer,
+    endDate = new Date(),
     headless = true,
+    kundenummer,
+    startDate = new Date(new Date().setFullYear(new Date().getFullYear() - 1)),
   } = options;
 
-  let browser: Browser | null = null;
-  let context: BrowserContext | null = null;
+  let browser: Browser | undefined = undefined;
+  let context: BrowserContext | undefined = undefined;
 
   try {
     browser = await chromium.launch({ headless });
     context = await browser.newContext();
     const page = await context.newPage();
 
-    await page.goto(HOFOR_LOGIN_URL, { waitUntil: 'networkidle', timeout: PAGE_TIMEOUT });
+    await page.goto(HOFOR_LOGIN_URL, { timeout: PAGE_TIMEOUT, waitUntil: 'networkidle' });
     await handleCookieConsent(page);
     await performLogin(page, kundenummer, bsKundenummer);
     await handleTrackingRejection(page);
 
-    const params = await extractCSVParameters(page);
-    const request = (await page.waitForResponse('**/wp-admin/admin-ajax.php')).request();
-    const csvData = await downloadCSV(request.headers(), params, startDate, endDate);
+    const parameters = await extractCSVParameters(page);
+    const response = await page.waitForResponse('**/wp-admin/admin-ajax.php');
+    const request = response.request();
+    const csvData = await downloadCSV(request.headers(), parameters, startDate, endDate);
 
     return parseCSV(csvData);
   } finally {
@@ -147,7 +149,7 @@ const fetchHoforDataInternal = async (options: FetchOptions): Promise<Historical
 };
 
 const fetchWithRetry = async (options: FetchOptions): Promise<HistoricalDataPoint[]> => {
-  let lastError: Error | null = null;
+  let lastError: Error | undefined = undefined;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {

@@ -1,22 +1,22 @@
 import type { InfluxDBConfig } from './influxdb.types.js';
 
+export interface AddonConfig {
+  backfillDays: number;
+  enableBackfill: boolean;
+  headless: boolean;
+  hofor: HoforCredentials;
+  influxdb: InfluxDBConfig;
+  logLevel: 'debug' | 'error' | 'info' | 'warn';
+  scrapeIntervalHours: number;
+  waterPrice: WaterPriceConfig;
+}
+
 export interface HoforCredentials {
-  kundenummer: string;
   bsKundenummer: string;
+  kundenummer: string;
 }
 
 export interface WaterPriceConfig {
-  pricePerM3: number;
   currency: string;
-}
-
-export interface AddonConfig {
-  hofor: HoforCredentials;
-  influxdb: InfluxDBConfig;
-  waterPrice: WaterPriceConfig;
-  scrapeIntervalHours: number;
-  headless: boolean;
-  logLevel: 'debug' | 'info' | 'warn' | 'error';
-  enableBackfill: boolean;
-  backfillDays: number;
+  pricePerM3: number;
 }
