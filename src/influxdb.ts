@@ -34,10 +34,7 @@ export class InfluxDBClient {
     }
   }
 
-  async writeAll(
-    consumption: ConsumptionData | undefined,
-    price: PriceData | undefined
-  ): Promise<void> {
+  async writeAll(consumption: ConsumptionData | null, price: PriceData | null): Promise<void> {
     const errors: string[] = [];
 
     if (consumption) {

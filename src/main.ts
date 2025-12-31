@@ -119,7 +119,7 @@ class HoforScraperApp {
       });
 
       if (historicalData.length > 0) {
-        const latestPoint = historicalData.at(-1);
+        const latestPoint = historicalData.at(-1)!;
         const usage = Number.parseFloat(latestPoint.usage.replace(',', '.'));
 
         if (Number.isNaN(usage)) {
@@ -142,7 +142,7 @@ class HoforScraperApp {
                   pricePerM3: this.config.waterPrice.pricePerM3,
                   timestamp: new Date(),
                 }
-              : undefined;
+              : null;
 
           await this.influxdbClient.writeAll(consumption, price);
         }

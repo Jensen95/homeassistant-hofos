@@ -28,6 +28,8 @@ export default defineConfig(
     rules: {
       'unicorn/filename-case': 'off',
       'unicorn/no-array-reduce': 'off',
+      'unicorn/no-null': 'off',
+      'perfectionist/sort-union-types': 'off',
     },
   },
   {
@@ -38,6 +40,12 @@ export default defineConfig(
         projectService: false,
         project: false,
       },
+    },
+    rules: {
+      'perfectionist/sort-objects': 'off',
+      'perfectionist/sort-classes': 'off',
+      'unicorn/no-useless-undefined': 'off',
+      'perfectionist/sort-object-types': 'off',
     },
   }
 );

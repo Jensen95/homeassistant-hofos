@@ -1,4 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { fetchHoforData, type FetchOptions } from './fetchHoforData.js';
 
 vi.mock('playwright', () => ({
@@ -25,7 +26,11 @@ vi.mock('playwright', () => ({
   },
 }));
 
-global.fetch = vi.fn();
+globalThis.fetch = vi.fn();
+
+const createMockResponse = (data: unknown): Response => {
+  return Response.json(data, { status: 200 });
+};
 
 describe('playwright', () => {
   beforeEach(() => {
@@ -42,13 +47,13 @@ describe('playwright', () => {
   describe('fetchHoforData', () => {
     it('should successfully fetch and parse CSV data', async () => {
       const mockCsvData = 'Dato;Forbrug;Enhed\n01.01.2024;10.5;m³\n02.01.2024;12,3;m³';
-      (global.fetch as any).mockResolvedValue({
-        json: vi.fn().mockResolvedValue({
+      vi.mocked(globalThis.fetch).mockResolvedValue(
+        createMockResponse({
           status: 'success',
           data: mockCsvData,
           fileName: 'test.csv',
-        }),
-      });
+        })
+      );
 
       const result = await fetchHoforData({
         kundenummer: '7123456',
@@ -71,13 +76,13 @@ describe('playwright', () => {
 
     it('should filter out header rows with "Forbrug"', async () => {
       const mockCsvData = 'Forbrug;Forbrug;Forbrug\n01.01.2024;10.5;m³';
-      (global.fetch as any).mockResolvedValue({
-        json: vi.fn().mockResolvedValue({
+      vi.mocked(globalThis.fetch).mockResolvedValue(
+        createMockResponse({
           status: 'success',
           data: mockCsvData,
           fileName: 'test.csv',
-        }),
-      });
+        })
+      );
 
       const result = await fetchHoforData({
         kundenummer: '7123456',
@@ -90,13 +95,13 @@ describe('playwright', () => {
 
     it('should filter out invalid #N/A values', async () => {
       const mockCsvData = '01.01.2024;#N/A;m³\n02.01.2024;10.5;m³\n03.01.2024;#N/A;m³';
-      (global.fetch as any).mockResolvedValue({
-        json: vi.fn().mockResolvedValue({
+      vi.mocked(globalThis.fetch).mockResolvedValue(
+        createMockResponse({
           status: 'success',
           data: mockCsvData,
           fileName: 'test.csv',
-        }),
-      });
+        })
+      );
 
       const result = await fetchHoforData({
         kundenummer: '7123456',
@@ -109,13 +114,13 @@ describe('playwright', () => {
 
     it('should filter out empty lines', async () => {
       const mockCsvData = '01.01.2024;10.5;m³\n\n\n02.01.2024;12.3;m³';
-      (global.fetch as any).mockResolvedValue({
-        json: vi.fn().mockResolvedValue({
+      vi.mocked(globalThis.fetch).mockResolvedValue(
+        createMockResponse({
           status: 'success',
           data: mockCsvData,
           fileName: 'test.csv',
-        }),
-      });
+        })
+      );
 
       const result = await fetchHoforData({
         kundenummer: '7123456',
@@ -127,14 +132,13 @@ describe('playwright', () => {
 
     it('should use provided start and end dates', async () => {
       const mockCsvData = '01.01.2024;10.5;m³';
-      const mockFetch = vi.fn().mockResolvedValue({
-        json: vi.fn().mockResolvedValue({
+      vi.mocked(globalThis.fetch).mockResolvedValue(
+        createMockResponse({
           status: 'success',
           data: mockCsvData,
           fileName: 'test.csv',
-        }),
-      });
-      global.fetch = mockFetch;
+        })
+      );
 
       const startDate = new Date('2024-01-01');
       const endDate = new Date('2024-01-31');
@@ -146,27 +150,27 @@ describe('playwright', () => {
         endDate,
       });
 
-      expect(mockFetch).toHaveBeenCalled();
-      const callArgs = mockFetch.mock.calls[0];
-      const body = callArgs[1].body;
+      expect(vi.mocked(globalThis.fetch)).toHaveBeenCalled();
+      const callArguments = vi.mocked(globalThis.fetch).mock.calls[0];
+      const body = callArguments?.[1]?.body;
       expect(body).toContain('sdate=2024-01-01');
       expect(body).toContain('edate=2024-01-31');
     });
 
     it('should retry on failure with exponential backoff', async () => {
       let attemptCount = 0;
-      (global.fetch as any).mockImplementation(() => {
+      vi.mocked(globalThis.fetch).mockImplementation(() => {
         attemptCount++;
         if (attemptCount < 3) {
           throw new Error('Network error');
         }
-        return Promise.resolve({
-          json: vi.fn().mockResolvedValue({
+        return Promise.resolve(
+          createMockResponse({
             status: 'success',
             data: '01.01.2024;10.5;m³',
             fileName: 'test.csv',
-          }),
-        });
+          })
+        );
       });
 
       const result = await fetchHoforData({
@@ -182,7 +186,7 @@ describe('playwright', () => {
     });
 
     it('should throw error after max retries', async () => {
-      (global.fetch as any).mockRejectedValue(new Error('Network error'));
+      vi.mocked(globalThis.fetch).mockRejectedValue(new Error('Network error'));
 
       await expect(
         fetchHoforData({
@@ -193,13 +197,13 @@ describe('playwright', () => {
     });
 
     it('should handle empty CSV data', async () => {
-      (global.fetch as any).mockResolvedValue({
-        json: vi.fn().mockResolvedValue({
+      vi.mocked(globalThis.fetch).mockResolvedValue(
+        createMockResponse({
           status: 'success',
           data: '',
           fileName: 'test.csv',
-        }),
-      });
+        })
+      );
 
       const result = await fetchHoforData({
         kundenummer: '7123456',
@@ -215,13 +219,13 @@ describe('playwright', () => {
         bsKundenummer: '',
       } as FetchOptions;
 
-      (global.fetch as any).mockResolvedValue({
-        json: vi.fn().mockResolvedValue({
+      vi.mocked(globalThis.fetch).mockResolvedValue(
+        createMockResponse({
           status: 'success',
           data: '01.01.2024;10.5;m³',
           fileName: 'test.csv',
-        }),
-      });
+        })
+      );
 
       await fetchHoforData(options);
 
