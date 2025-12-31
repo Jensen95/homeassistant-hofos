@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/Jensen95/homeassistant-hofos/compare/v1.0.0...v1.0.1) (2025-12-31)
+
+
+### Bug Fixes
+
+* separate release and Docker build workflows by trigger ([d1425c3](https://github.com/Jensen95/homeassistant-hofos/commit/d1425c3cf05f7378c777f2e6fd9f563d9e4a4875))
+
 # 1.0.0 (2025-12-31)
 
 
