@@ -36,4 +36,4 @@ schema:
   enable_backfill: bool?
   backfill_days: int(1,730)?
   log_level: list(debug|info|warn|error)
-image: ghcr.io/jensen95/homeassistant-hofos:latest
+image: ghcr.io/jensen95/homeassistant-hofos
