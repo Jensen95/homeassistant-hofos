@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/Jensen95/homeassistant-hofos/compare/v1.0.1...v1.0.2) (2025-12-31)
+
+
+### Bug Fixes
+
+* convert repository name to lowercase for Docker image tags ([6d96a9d](https://github.com/Jensen95/homeassistant-hofos/commit/6d96a9d7f8553914be7c4cd3a4c5099aab7afb61))
+
 ## [1.0.1](https://github.com/Jensen95/homeassistant-hofos/compare/v1.0.0...v1.0.1) (2025-12-31)
 
 
