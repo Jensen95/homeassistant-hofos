@@ -46,11 +46,9 @@ RUN npm ci --omit=dev
 
 COPY --from=builder /app/dist ./dist
 
-RUN addgroup -g 1000 hofor && \
-    adduser -D -u 1000 -G hofor hofor && \
-    chown -R hofor:hofor /app
+RUN chown -R node:node /app
 
-USER hofor
+USER node
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD node -e "console.log('OK')" || exit 1
