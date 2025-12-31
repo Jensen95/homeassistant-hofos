@@ -8,7 +8,6 @@ RUN apk add --no-cache \
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-COPY tsconfig.json ./
 
 RUN npm ci
 
