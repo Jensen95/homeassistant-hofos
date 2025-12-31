@@ -1,6 +1,5 @@
 # Ignore dependencies
 node_modules/
-package-lock.json
 
 # Ignore build output
 dist/
@@ -26,6 +25,5 @@ vitest.config.ts
 !README.md
 
 # Ignore development files
-tsconfig.json
 .eslintrc.json
 .prettierrc.json
