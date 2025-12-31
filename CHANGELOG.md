@@ -1,3 +1,10 @@
+## [1.0.3](https://github.com/Jensen95/homeassistant-hofos/compare/v1.0.2...v1.0.3) (2025-12-31)
+
+
+### Bug Fixes
+
+* **config.yaml:** fix wrong image value for config ([3f393f9](https://github.com/Jensen95/homeassistant-hofos/commit/3f393f96211b36eb8e024ae2711f53ae9224b99a))
+
 ## [1.0.2](https://github.com/Jensen95/homeassistant-hofos/compare/v1.0.1...v1.0.2) (2025-12-31)
 
 
