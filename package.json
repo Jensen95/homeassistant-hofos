@@ -15,7 +15,9 @@
     "lint:fix": "eslint src/**/*.ts --fix",
     "format": "prettier --write \"src/**/*.ts\"",
     "commit": "cz",
-    "sync-version": "node scripts/sync-version.ts"
+    "sync-version": "node scripts/sync-version.ts",
+    "release": "semantic-release",
+    "release:dry-run": "semantic-release --dry-run"
   },
   "keywords": [
     "home-assistant",
@@ -32,6 +34,10 @@
     "winston": "^3.19.0"
   },
   "devDependencies": {
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/exec": "^7.1.0",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^12.0.2",
     "@types/node": "^24.10.4",
     "@typescript-eslint/eslint-plugin": "^8.50.0",
     "@typescript-eslint/parser": "^8.50.0",
@@ -39,13 +45,14 @@
     "@vitest/eslint-plugin": "^1.6.4",
     "@vitest/ui": "^4.0.16",
     "commitizen": "^4.3.1",
+    "cosmiconfig": "^9.0.0",
     "cz-conventional-changelog": "^3.3.0",
     "eslint": "^9.39.2",
     "eslint-plugin-perfectionist": "^5.1.0",
     "eslint-plugin-unicorn": "^62.0.0",
-    "cosmiconfig": "^9.0.0",
     "globals": "^16.5.0",
     "prettier": "^3.7.4",
+    "semantic-release": "^25.0.2",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.51.0",
     "vitest": "^4.0.16"
