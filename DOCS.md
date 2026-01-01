@@ -161,7 +161,7 @@ The Home Assistant Energy Dashboard provides native water consumption tracking. 
 Add the following to your `configuration.yaml`:
 
 ```yaml
-# Template sensor that calculates cumulative water consumption from InfluxDB
+# Template sensor that references the InfluxDB sensor
 template:
   - sensor:
       - name: "Water Consumption Total"
@@ -170,11 +170,6 @@ template:
         device_class: water
         unit_of_measurement: "m³"
         state: >
-          {% set query = "from(bucket: \"homeassistant/autogen\")
-            |> range(start: 0)
-            |> filter(fn: (r) => r[\"_measurement\"] == \"water_consumption\")
-            |> filter(fn: (r) => r[\"_field\"] == \"value\")
-            |> sum()" %}
           {{ states('sensor.hofor_water_total') | float(0) }}
         availability: >
           {{ states('sensor.hofor_water_total') not in ['unavailable', 'unknown', 'none'] }}
@@ -257,7 +252,7 @@ sensor:
     resource: "http://a0d7b954-influxdb:8086/api/v2/query?org=homeassistant"
     method: POST
     headers:
-      Authorization: "Token YOUR_INFLUXDB_TOKEN"
+      Authorization: !secret influxdb_token_header
       Content-Type: "application/vnd.flux"
     payload: >
       from(bucket: "homeassistant/autogen")
@@ -266,9 +261,23 @@ sensor:
         |> filter(fn: (r) => r["_field"] == "value")
         |> sum()
     value_template: >
-      {% set data = value_json._results[0]._tables[0]._records %}
-      {% if data | length > 0 %}
-        {{ data[0]._value | float(0) }}
+      {% if value_json is defined and value_json._results is defined %}
+        {% set results = value_json._results %}
+        {% if results | length > 0 and results[0]._tables is defined %}
+          {% set tables = results[0]._tables %}
+          {% if tables | length > 0 and tables[0]._records is defined %}
+            {% set records = tables[0]._records %}
+            {% if records | length > 0 and records[0]._value is defined %}
+              {{ records[0]._value | float(0) }}
+            {% else %}
+              0
+            {% endif %}
+          {% else %}
+            0
+          {% endif %}
+        {% else %}
+          0
+        {% endif %}
       {% else %}
         0
       {% endif %}
@@ -276,6 +285,11 @@ sensor:
     state_class: total_increasing
     device_class: water
     scan_interval: 3600
+```
+
+Add to your `secrets.yaml`:
+```yaml
+influxdb_token_header: "Token YOUR_INFLUXDB_TOKEN_HERE"
 ```
 
 **Note:** This approach requires manual JSON parsing and may be less reliable than the InfluxDB integration.
