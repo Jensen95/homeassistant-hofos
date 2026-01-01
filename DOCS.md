@@ -61,11 +61,13 @@ This add-on scrapes HOFOR (Copenhagen Water) consumption data and stores it in I
 
 ### Example Configuration
 
+**Important**: Store your InfluxDB token securely. While shown inline here for the addon configuration, consider using Home Assistant's secrets feature where applicable.
+
 ```yaml
 hofor_kundenummer: "7123456"
 hofor_bs_kundenummer: "81234567"
 influxdb_url: "http://a0d7b954-influxdb:8086"
-influxdb_token: "your-influxdb-token-here"
+influxdb_token: "your-influxdb-token-here"  # Get from InfluxDB UI → Data → Tokens
 influxdb_org: "homeassistant"
 influxdb_bucket: "homeassistant/autogen"
 water_price_per_m3: 28.50
@@ -289,6 +291,10 @@ sensor:
 
 Add to your `secrets.yaml`:
 ```yaml
+# For InfluxDB integration sensors
+influxdb_token: "YOUR_INFLUXDB_TOKEN_HERE"
+
+# For RESTful sensors (includes "Token " prefix)
 influxdb_token_header: "Token YOUR_INFLUXDB_TOKEN_HERE"
 ```
 
