@@ -9,6 +9,7 @@ A standalone Home Assistant addon that scrapes HOFOR (Hovedstadens Forsyningssel
 - 💾 **InfluxDB Storage**: Time-series database storage for historical data
 - 📈 **Historical Backfilling**: Automatically backfills up to 2 years of historical data
 - 🔄 **Scheduled Scraping**: Configurable interval (default: every 3 hours)
+- ⚡ **Energy Dashboard Integration**: Works with Home Assistant's Energy Dashboard
 - 🛡️ **Robust Error Handling**: Exponential backoff retry logic (3 attempts with increasing delays)
 - 🐳 **Docker Optimized**: Multi-stage Alpine build with Playwright Chromium
 - 📝 **TypeScript**: Full type safety with colocated types and modern async/await patterns
@@ -151,6 +152,8 @@ npm run dev
 ## InfluxDB Integration
 
 The addon stores water consumption and price data in InfluxDB using the `@influxdata/influxdb-client` library (v1.35.0).
+
+For **Energy Dashboard integration**, see the detailed guide in [DOCS.md](DOCS.md#energy-dashboard-integration-recommended).
 
 ### Version Support
 
