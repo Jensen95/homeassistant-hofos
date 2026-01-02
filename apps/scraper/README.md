@@ -1,16 +1,32 @@
-# Home Assistant Add-on: HOFOR Scraper
+# HOFOR Scraper - Home Assistant Addon
+
+A TypeScript Home Assistant addon that scrapes HOFOR (Hovedstadens Forsyningsselskab) water consumption data and stores it in InfluxDB.
+
+## Features
+
+- Direct login to HOFOR (no MitID required)
+- Water consumption tracking in m³
+- InfluxDB time-series storage
+- Historical data backfilling (up to 2 years)
+- Configurable scraping interval (default: 3 hours)
+- Exponential backoff retry logic
+- Docker-optimized with Playwright Chromium
 
 ## Installation
 
-1. Add this repository to your Home Assistant Supervisor:
+### Home Assistant Addon Repository (Recommended)
+
+1. **Add this repository to Home Assistant:**
    - Navigate to **Supervisor** → **Add-on Store** → **⋮** (menu) → **Repositories**
    - Add: `https://github.com/Jensen95/homeassistant-hofos`
 
-2. Find "HOFOR Scraper" in the add-on store and click **Install**
+2. **Install the addon:**
+   - Find "HOFOR Scraper" in the addon store
+   - Click **Install**
 
-3. Configure the add-on (see Configuration section below)
+3. **Configure the addon** (see Configuration section below)
 
-4. Click **Start**
+4. **Click Start**
 
 ## Configuration
 
@@ -66,46 +82,9 @@ backfill_days: 365
 log_level: "info"
 ```
 
-## Setup Guide
-
-### Step 1: Install InfluxDB Add-on (if not already installed)
-
-1. Go to **Supervisor** → **Add-on Store**
-2. Search for "InfluxDB"
-3. Install the official InfluxDB add-on
-4. Configure and start it
-5. Open the InfluxDB UI and create a token:
-   - Navigate to **Data** → **Tokens**
-   - Click **Generate Token** → **Read/Write Token**
-   - Select buckets: `homeassistant/autogen`
-   - Copy the generated token
-
-### Step 2: Find Your HOFOR Credentials
-
-Your HOFOR credentials can be found:
-
-- **Kundenummer**: On your HOFOR bills or at https://prod.tastselvservice.dk
-- **BS-Kundenummer**: Also on your bills, typically labeled as "BS-kunde nummer"
-
-### Step 3: Configure HOFOR Scraper
-
-Paste your credentials and InfluxDB token into the add-on configuration page.
-
-### Step 4: Verify Installation
-
-1. Start the add-on
-2. Check the logs for successful connection and scraping
-3. Open InfluxDB Data Explorer and query:
-
-   ```flux
-   from(bucket: "homeassistant/autogen")
-     |> range(start: -7d)
-     |> filter(fn: (r) => r["_measurement"] == "water_consumption")
-   ```
-
 ## Data Structure
 
-The add-on writes two measurements to InfluxDB:
+The addon writes two measurements to InfluxDB:
 
 ### water_consumption
 
@@ -124,42 +103,76 @@ The add-on writes two measurements to InfluxDB:
   - `source`: "hofor-scraper"
 - **Timestamp:** Current time
 
-## Visualization in Home Assistant
+## Development
 
-### Long-Term Statistics
+### Prerequisites
 
-The InfluxDB data can be visualized using:
+- Node.js 24+
+- npm 10+
 
-1. **Grafana Add-on** - Full-featured dashboarding
-2. **ApexCharts Card** - Custom HA dashboard cards
-3. **InfluxDB Sensor** - Create template sensors
+### Local Setup
 
-### Example: Create a Sensor
+```bash
+# Install dependencies
+npm install
 
-Add to `configuration.yaml`:
+# Install Playwright browsers
+npx playwright install chromium
 
-```yaml
-sensor:
-  - platform: influxdb
-    host: a0d7b954-influxdb
-    port: 8086
-    token: !secret influxdb_token
-    organization: homeassistant
-    bucket: homeassistant/autogen
-    queries:
-      - name: Daily Water Consumption
-        query: >
-          from(bucket: "homeassistant/autogen")
-            |> range(start: -1d)
-            |> filter(fn: (r) => r["_measurement"] == "water_consumption")
-            |> last()
-        value_template: "{{ value }}"
-        unit_of_measurement: "m³"
+# Copy environment template
+cp .env.example .env
+# Edit .env with your credentials
+
+# Run in development mode
+npm run dev
+```
+
+### Available Scripts
+
+| Script | Description |
+|--------|-------------|
+| `npm run build` | Compile TypeScript to JavaScript |
+| `npm run dev` | Run in development mode with hot reload |
+| `npm start` | Run the compiled application |
+| `npm test` | Run tests with Vitest |
+| `npm run test:watch` | Run tests in watch mode |
+| `npm run test:coverage` | Generate test coverage report |
+| `npm run lint` | Lint TypeScript code |
+| `npm run format` | Format code with Prettier |
+| `npm run typecheck` | Type-check without emitting |
+
+### Building Docker Image
+
+```bash
+docker build -t hofor-scraper .
+
+docker run -d \
+  --name hofor-scraper \
+  -e HOFOR_KUNDENUMMER=7xxxxxxx \
+  -e HOFOR_BS_KUNDENUMMER=8xxxxxxx \
+  -e INFLUXDB_URL=http://localhost:8086 \
+  -e INFLUXDB_TOKEN=your_token \
+  -e INFLUXDB_ORG=homeassistant \
+  -e INFLUXDB_BUCKET=homeassistant/autogen \
+  -e ENABLE_BACKFILL=true \
+  -e BACKFILL_DAYS=365 \
+  hofor-scraper
+```
+
+## Querying Data
+
+Example Flux query to get daily consumption:
+
+```flux
+from(bucket: "homeassistant/autogen")
+  |> range(start: -30d)
+  |> filter(fn: (r) => r["_measurement"] == "water_consumption")
+  |> filter(fn: (r) => r["_field"] == "value")
 ```
 
 ## Troubleshooting
 
-### Add-on won't start
+### Addon won't start
 
 1. Check logs for error messages
 2. Verify HOFOR credentials are correct
@@ -173,21 +186,11 @@ sensor:
 3. Check if backfilling completed (look for log message)
 4. Ensure InfluxDB bucket name matches configuration
 
-### "Authentication failed" errors
+### Authentication failed
 
 - Double-check your kundenummer and bs-kundenummer
 - Verify you can log in at https://prod.tastselvservice.dk manually
 - HOFOR may be down or undergoing maintenance
-
-### Scraping failures
-
-- HOFOR website may have changed structure (check for add-on updates)
-- Network connectivity issues
-- Rate limiting (reduce scrape frequency)
-
-## Support
-
-- **Issues**: https://github.com/Jensen95/homeassistant-hofos/issues
 
 ## License
 

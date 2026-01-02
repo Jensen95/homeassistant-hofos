@@ -1,0 +1,50 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configure HOFOR Water",
+        "description": "Connect to InfluxDB to read HOFOR water consumption data.",
+        "data": {
+          "influxdb_url": "InfluxDB URL",
+          "influxdb_token": "InfluxDB Token",
+          "influxdb_org": "InfluxDB Organization",
+          "influxdb_bucket": "InfluxDB Bucket",
+          "poll_interval": "Poll Interval (hours)"
+        },
+        "data_description": {
+          "influxdb_url": "The URL of your InfluxDB instance",
+          "influxdb_token": "API token with read access to the bucket",
+          "influxdb_org": "The InfluxDB organization name",
+          "influxdb_bucket": "The bucket containing water consumption data",
+          "poll_interval": "How often to check for new data (1-24 hours)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to InfluxDB. Please check URL and token.",
+      "invalid_auth": "Invalid authentication. Please check your token.",
+      "no_data": "Connected successfully but no water consumption data found.",
+      "unknown": "An unexpected error occurred."
+    },
+    "abort": {
+      "already_configured": "HOFOR Water is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Configure HOFOR Water",
+        "data": {
+          "poll_interval": "Poll Interval (hours)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "water_consumption": {
+        "name": "Water Consumption"
+      }
+    }
+  }
+}

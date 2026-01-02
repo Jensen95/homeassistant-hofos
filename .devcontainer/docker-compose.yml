@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  devcontainer:
+    image: mcr.microsoft.com/devcontainers/base:ubuntu
+    volumes:
+      - ..:/workspaces/${localWorkspaceFolderBasename}:cached
+    command: sleep infinity
+    network_mode: service:homeassistant
+
+  homeassistant:
+    image: homeassistant/home-assistant:stable
+    volumes:
+      - homeassistant-config:/config
+      - ../apps/hacs-integration/custom_components:/config/custom_components:cached
+    ports:
+      - "8123:8123"
+      - "8086:8086"
+    environment:
+      - TZ=Europe/Copenhagen
+    restart: unless-stopped
+    depends_on:
+      - influxdb
+
+  influxdb:
+    image: influxdb:2.7
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+      - influxdb-config:/etc/influxdb2
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=adminpassword
+      - DOCKER_INFLUXDB_INIT_ORG=homeassistant
+      - DOCKER_INFLUXDB_INIT_BUCKET=homeassistant/autogen
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=dev-token-for-testing
+    restart: unless-stopped
+
+volumes:
+  homeassistant-config:
+  influxdb-data:
+  influxdb-config:

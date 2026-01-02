@@ -4,21 +4,23 @@ on:
   push:
     branches:
       - main
+      - master
   pull_request:
     branches:
       - main
+      - master
 
 jobs:
-  lint-and-test:
-    name: Lint, Format, Build & Test
+  lint-and-test-scraper:
+    name: Scraper - Lint, Build & Test
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
           node-version: '24'
           cache: 'npm'
@@ -26,17 +28,51 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run ESLint
-        run: npm run lint
+      - name: Run Turborepo lint
+        run: npm run lint -- --filter=@hofor/scraper
 
-      - name: Check code formatting
-        run: npm run format -- --check
+      - name: Run Turborepo build
+        run: npm run build -- --filter=@hofor/scraper
 
-      - name: Build TypeScript
-        run: npm run build
+      - name: Run Turborepo test
+        run: npm run test -- --filter=@hofor/scraper
 
-      - name: Run tests
-        run: npm test
+  lint-and-test-hacs:
+    name: HACS - Lint & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: apps/hacs-integration/requirements-dev.txt
+
+      - name: Install dependencies
+        working-directory: apps/hacs-integration
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Run ruff linter
+        working-directory: apps/hacs-integration
+        run: ruff check .
+
+      - name: Run ruff formatter check
+        working-directory: apps/hacs-integration
+        run: ruff format --check .
+
+      - name: Run mypy
+        working-directory: apps/hacs-integration
+        run: mypy custom_components/hofor_water
+
+      - name: Run pytest
+        working-directory: apps/hacs-integration
+        run: pytest --cov=custom_components/hofor_water --cov-report=xml
 
   dependency-review:
     name: Dependency Review
@@ -45,7 +81,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Dependency Review
         uses: actions/dependency-review-action@v4

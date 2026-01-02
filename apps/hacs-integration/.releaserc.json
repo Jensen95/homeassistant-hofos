@@ -1,5 +1,6 @@
 {
   "branches": ["master"],
+  "tagFormat": "hacs-v${version}",
   "plugins": [
     "@semantic-release/commit-analyzer",
     "@semantic-release/release-notes-generator",
@@ -10,28 +11,27 @@
       }
     ],
     [
-      "@semantic-release/npm",
-      {
-        "npmPublish": false
-      }
-    ],
-    [
       "@semantic-release/exec",
       {
-        "prepareCmd": "npm run sync-version"
+        "prepareCmd": "python scripts/update_version.py ${nextRelease.version}"
       }
     ],
     [
       "@semantic-release/git",
       {
-        "assets": ["package.json", "package-lock.json", "CHANGELOG.md", "config.yaml"],
-        "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+        "assets": ["CHANGELOG.md", "custom_components/hofor_water/manifest.json"],
+        "message": "chore(release): hacs ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
       }
     ],
     [
       "@semantic-release/github",
       {
-        "assets": []
+        "assets": [
+          {
+            "path": "hofor_water.zip",
+            "label": "hofor_water.zip"
+          }
+        ]
       }
     ]
   ]

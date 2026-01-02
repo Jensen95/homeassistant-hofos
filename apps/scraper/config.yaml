@@ -1,5 +1,5 @@
 name: HOFOR Scraper
-version: '0.1.0'
+version: '1.0.3'
 slug: hofor_scraper
 description: Scrapes HOFOR consumption data and publishes to InfluxDB
 url: https://github.com/Jensen95/homeassistant-hofos

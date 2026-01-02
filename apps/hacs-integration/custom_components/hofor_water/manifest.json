@@ -1,0 +1,12 @@
+{
+  "domain": "hofor_water",
+  "name": "HOFOR Water",
+  "codeowners": ["@Jensen95"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/Jensen95/homeassistant-hofos",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/Jensen95/homeassistant-hofos/issues",
+  "requirements": ["influxdb-client==1.45.0"],
+  "version": "1.0.0"
+}

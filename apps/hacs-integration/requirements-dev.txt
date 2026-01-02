@@ -1,0 +1,18 @@
+# Testing
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
+pytest-homeassistant-custom-component>=0.13.0
+pytest-cov>=4.1.0
+
+# Type checking
+mypy>=1.8.0
+types-python-dateutil>=2.8.0
+
+# Linting
+ruff>=0.1.0
+
+# InfluxDB client (runtime dependency)
+influxdb-client==1.45.0
+
+# Home Assistant core (for type hints)
+homeassistant>=2024.1.0
