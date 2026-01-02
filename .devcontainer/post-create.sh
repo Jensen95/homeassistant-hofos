@@ -3,25 +3,19 @@ set -e
 
 echo "🚀 Setting up HOFOR Home Assistant development environment..."
 
-# Install root dependencies (Turborepo)
-echo "📦 Installing root dependencies..."
-npm install
-
-# Install scraper dependencies
-echo "📦 Installing scraper dependencies..."
-cd apps/scraper
-npm install
-npx playwright install chromium
-cd ../..
-
-# Set up Python virtual environment for HACS integration
-echo "🐍 Setting up Python environment..."
-cd apps/hacs-integration
-python -m venv .venv
-source .venv/bin/activate
+# Install Python dependencies globally (so Turborepo can find them)
+echo "🐍 Installing Python dependencies..."
 pip install --upgrade pip
-pip install -r requirements-dev.txt
-deactivate
+pip install -r apps/hacs-integration/requirements-dev.txt
+
+# Install root dependencies (Turborepo + workspaces)
+echo "📦 Installing Node dependencies..."
+npm install
+
+# Install Playwright browsers for scraper
+echo "🎭 Installing Playwright browsers..."
+cd apps/scraper
+npx playwright install chromium
 cd ../..
 
 # Wait for InfluxDB to be ready
@@ -52,9 +46,13 @@ echo "  - Token:    dev-token-for-testing"
 echo "  - Org:      homeassistant"
 echo "  - Bucket:   homeassistant/autogen"
 echo ""
-echo "Quick commands:"
-echo "  - npm run build       # Build all apps"
-echo "  - npm run test        # Run all tests"
-echo "  - cd apps/scraper && npm run dev    # Run scraper in dev mode"
-echo "  - cd apps/hacs-integration && source .venv/bin/activate && pytest  # Run HACS tests"
+echo "Turborepo commands (run from root):"
+echo "  npm run build       # Build all apps"
+echo "  npm run test        # Test all apps"
+echo "  npm run lint        # Lint all apps"
+echo "  npm run typecheck   # Type check all apps"
+echo ""
+echo "Filter to specific app:"
+echo "  npm run test -- --filter=@hofor/scraper"
+echo "  npm run test -- --filter=@hofor/hacs-integration"
 echo ""

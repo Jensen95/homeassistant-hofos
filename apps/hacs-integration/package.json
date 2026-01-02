@@ -1,0 +1,22 @@
+{
+  "name": "@hofor/hacs-integration",
+  "version": "1.0.0",
+  "private": true,
+  "description": "HACS integration for HOFOR water consumption",
+  "scripts": {
+    "build": "echo 'No build step for Python'",
+    "test": "pytest",
+    "test:watch": "ptw",
+    "test:coverage": "pytest --cov=custom_components/hofor_water --cov-report=html",
+    "lint": "ruff check . && ruff format --check .",
+    "lint:fix": "ruff check --fix . && ruff format .",
+    "typecheck": "mypy custom_components/hofor_water",
+    "clean": "rm -rf .pytest_cache .mypy_cache .ruff_cache htmlcov .coverage",
+    "setup": "python -m venv .venv && . .venv/bin/activate && pip install -r requirements-dev.txt"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Jensen95/homeassistant-hofos.git",
+    "directory": "apps/hacs-integration"
+  }
+}

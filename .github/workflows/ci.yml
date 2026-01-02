@@ -11,8 +11,8 @@ on:
       - master
 
 jobs:
-  lint-and-test-scraper:
-    name: Scraper - Lint, Build & Test
+  ci:
+    name: Lint, Build & Test
     runs-on: ubuntu-latest
 
     steps:
@@ -25,26 +25,6 @@ jobs:
           node-version: '24'
           cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run Turborepo lint
-        run: npm run lint -- --filter=@hofor/scraper
-
-      - name: Run Turborepo build
-        run: npm run build -- --filter=@hofor/scraper
-
-      - name: Run Turborepo test
-        run: npm run test -- --filter=@hofor/scraper
-
-  lint-and-test-hacs:
-    name: HACS - Lint & Test
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -52,27 +32,25 @@ jobs:
           cache: 'pip'
           cache-dependency-path: apps/hacs-integration/requirements-dev.txt
 
-      - name: Install dependencies
-        working-directory: apps/hacs-integration
+      - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
+          pip install -r apps/hacs-integration/requirements-dev.txt
 
-      - name: Run ruff linter
-        working-directory: apps/hacs-integration
-        run: ruff check .
+      - name: Install Node dependencies
+        run: npm ci
 
-      - name: Run ruff formatter check
-        working-directory: apps/hacs-integration
-        run: ruff format --check .
+      - name: Turbo lint
+        run: npm run lint
 
-      - name: Run mypy
-        working-directory: apps/hacs-integration
-        run: mypy custom_components/hofor_water
+      - name: Turbo typecheck
+        run: npm run typecheck
 
-      - name: Run pytest
-        working-directory: apps/hacs-integration
-        run: pytest --cov=custom_components/hofor_water --cov-report=xml
+      - name: Turbo build
+        run: npm run build
+
+      - name: Turbo test
+        run: npm run test
 
   dependency-review:
     name: Dependency Review

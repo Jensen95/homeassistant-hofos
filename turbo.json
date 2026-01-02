@@ -4,33 +4,31 @@
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**"],
-      "inputs": ["src/**", "tsconfig.json", "package.json"]
+      "inputs": ["$TURBO_DEFAULT$", "src/**", "custom_components/**"]
     },
     "test": {
-      "dependsOn": ["build"],
-      "outputs": ["coverage/**"],
-      "inputs": ["src/**", "vitest.config.ts"]
+      "outputs": ["coverage/**", "htmlcov/**", ".coverage"],
+      "inputs": ["$TURBO_DEFAULT$", "src/**", "custom_components/**", "tests/**"]
     },
     "test:watch": {
       "cache": false,
       "persistent": true
     },
+    "test:coverage": {
+      "outputs": ["coverage/**", "htmlcov/**"],
+      "inputs": ["$TURBO_DEFAULT$", "src/**", "custom_components/**", "tests/**"]
+    },
     "lint": {
       "outputs": [],
-      "inputs": ["src/**", "eslint.config.mjs"]
+      "inputs": ["$TURBO_DEFAULT$", "src/**", "custom_components/**"]
     },
     "lint:fix": {
       "outputs": [],
       "cache": false
     },
-    "format": {
-      "outputs": [],
-      "cache": false
-    },
     "typecheck": {
-      "dependsOn": ["^build"],
       "outputs": [],
-      "inputs": ["src/**", "tsconfig.json"]
+      "inputs": ["$TURBO_DEFAULT$", "src/**", "custom_components/**"]
     },
     "dev": {
       "cache": false,
